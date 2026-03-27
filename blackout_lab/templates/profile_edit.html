@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-primary text-white p-4">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-pencil-square me-2"></i> 프로필 정보 수정</h4>
+            </div>
+            <div class="card-body p-4 p-md-5 bg-body">
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">가입 아이디 <span class="badge bg-secondary ms-1">수정 불가</span></label>
+                        <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">이메일 주소</label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-light text-secondary"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" name="email" value="{{ user.email or '' }}" placeholder="이메일을 입력해주세요">
+                        </div>
+                    </div>
+                    <div class="mb-5">
+                        <label class="form-label text-secondary fw-bold">한 줄 소개 (Bio)</label>
+                        <textarea class="form-control shadow-sm border-secondary border-opacity-25" name="bio" rows="4" placeholder="자신을 짧게 소개해보세요. 게시판 활동 시 프로필에 나타납니다.">{{ user.bio or '' }}</textarea>
+                        <div class="form-text mt-2"><i class="bi bi-info-circle text-info"></i> 마이페이지 조회 시 공개되는 정보입니다. HTML 태그가 동작할 수 있습니다.</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center pt-4 border-top">
+                        <a href="/profile?user_id={{ user.id }}" class="btn btn-outline-secondary px-4 fw-bold rounded-pill shadow-sm">취소 및 돌아가기</a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold rounded-pill shadow-sm"><i class="bi bi-check-circle me-1"></i> 변경사항 저장</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="alert border border-primary border-opacity-25 bg-primary bg-opacity-10 rounded-4 p-4 shadow-sm">
+            <h6 class="fw-bold text-primary-emphasis mb-2"><i class="bi bi-incognito me-2"></i> [해킹 실습] 타인의 정보 무단 변경 (IDOR on Update)</h6>
+            <p class="mb-0 text-dark small lh-base">
+                현재 백엔드의 프로필 수정 처리 로직(`/profile/edit`)에는 세션 검증이 존재합니다만, 다른 엔드포인트나 권한 검증 누락 지점을 발견하면<br>
+                자신의 세션으로 로그인한 상태에서 <code class="text-danger">user_id=1</code> 파라미터를 조작하여 관리자의 이메일을 자신 것으로 바꾼 뒤 비밀번호를 탈취하는 시나리오를 구성해 볼 수 있습니다.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

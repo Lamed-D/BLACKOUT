@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 50vh;">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-success text-white text-center py-4">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-person-plus-fill me-2"></i> 웹 실습실 회원가입</h4>
+            </div>
+            <div class="card-body p-4 p-md-5 bg-body">
+                {% if error %}
+                    <div class="alert alert-danger d-flex align-items-center rounded-3 mb-4 shadow-sm" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill fs-4 me-3"></i>
+                        <div>{{ error }}</div>
+                    </div>
+                {% endif %}
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">아이디 <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-person text-secondary"></i></span>
+                            <input type="text" class="form-control border-start-0 ps-0" name="username" placeholder="사용할 아이디 입력" required>
+                        </div>
+                        <div class="form-text mt-2"><i class="bi bi-exclamation-triangle text-warning"></i> 회원가입 시 중복 아이디 검증 단계에서 SQL 인젝션 공격이 가능합니다.</div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">이름 (Name) <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-person-badge text-secondary"></i></span>
+                            <input type="text" class="form-control border-start-0 ps-0" name="name" placeholder="실명 입력" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">가입 이메일 <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-envelope text-secondary"></i></span>
+                            <input type="email" class="form-control border-start-0 ps-0" name="email" placeholder="example@test.com" required>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">비밀번호 <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-key text-secondary"></i></span>
+                            <input type="password" class="form-control border-start-0 ps-0" name="password" placeholder="비밀번호 입력" required>
+                        </div>
+                    </div>
+                    <div class="mb-5">
+                        <label class="form-label text-secondary fw-bold">비밀번호 확인 <span class="text-danger">*</span></label>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-shield-lock text-secondary"></i></span>
+                            <input type="password" class="form-control border-start-0 ps-0" name="confirm" placeholder="비밀번호 다시 입력" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold shadow">회원가입 완료</button>
+                </form>
+            </div>
+            <div class="card-footer bg-body-tertiary border-0 p-4 text-center">
+                <span class="text-secondary small">이미 계정이 있으신가요? </span><a href="/login" class="text-decoration-none text-success small fw-bold">로그인하기</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

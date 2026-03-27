@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 50vh;">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-primary text-white text-center py-4">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-search me-2"></i> 아이디 찾기</h4>
+            </div>
+            <div class="card-body p-4 p-md-5 bg-body">
+                {% if result %}
+                    <div class="alert alert-success d-flex align-items-center rounded-3 mb-4 shadow-sm" role="alert">
+                        <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                        <div>조회된 가입 아이디: <strong class="fs-5 ms-1">{{ result }}</strong></div>
+                    </div>
+                {% else %}
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">가입 시 등록한 이메일</label>
+                        <div class="input-group input-group-lg shadow-sm">
+                            <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-envelope text-secondary"></i></span>
+                            <input type="email" class="form-control border-start-0 ps-0" name="email" placeholder="example@test.com" required>
+                        </div>
+                        <div class="form-text mt-2"><i class="bi bi-info-circle text-info"></i> SQL 인젝션 공격으로 타겟 유저의 이메일을 추출하여 악용해 볼 수 있습니다.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow">아이디 찾기</button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-body-tertiary border-0 p-4 text-center">
+                <a href="/login" class="text-decoration-none text-secondary small fw-bold"><i class="bi bi-arrow-left me-1"></i> 로그인 화면으로</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

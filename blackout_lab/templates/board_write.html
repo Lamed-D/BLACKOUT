@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-dark text-white py-4 px-4 d-flex align-items-center">
+                <i class="bi bi-pencil-square fs-3 me-3 text-warning"></i>
+                <h4 class="mb-0 fw-bold">자유게시판 새 글 쓰기</h4>
+            </div>
+            <div class="card-body p-4 p-md-5 bg-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary">제목</label>
+                        <input type="text" class="form-control form-control-lg bg-body-tertiary border-secondary shadow-sm" name="title" placeholder="제목을 입력하세요" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold d-flex justify-content-between align-items-center text-secondary">
+                            <span>내용</span>
+                            <span class="badge bg-danger text-white rounded-pill px-3"><i class="bi bi-bug-fill me-1"></i> Stored XSS 취약</span>
+                        </label>
+                        <!-- 본문에 <script> 태그 사용 시 필터링이 안되고 실행됨 -->
+                        <textarea class="form-control bg-body-tertiary border-secondary shadow-sm" name="content" rows="12" placeholder="자유롭게 작성해주세요. HTML 태그 및 자바스크립트 스크립트가 그대로 허용됩니다."></textarea>
+                    </div>
+
+                    <div class="mb-5 border border-2 border-secondary border-opacity-25 p-4 rounded-4 bg-body-tertiary position-relative shadow-sm">
+                        <label class="form-label fw-bold d-flex justify-content-between align-items-center text-secondary">
+                            <span><i class="bi bi-paperclip fs-5 me-1"></i> 첨부파일</span>
+                            <span class="badge bg-warning text-dark border border-warning rounded-pill px-3"><i class="bi bi-bug-fill text-dark me-1"></i> File Upload 취약</span>
+                        </label>
+                        <input class="form-control form-control-lg shadow-sm" type="file" name="file">
+                        <div class="form-text mt-3 text-muted">
+                            <i class="bi bi-info-circle me-1"></i> 서버 확장자 검증 로직이 누락되어 있습니다. 웹 서버를 장악할 수 있는 스크립트 파일(`.html`, `.py`, `.jsp` 등)을 첨부하여 실습해 보세요.
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/" class="btn btn-outline-secondary btn-lg px-5 rounded-pill shadow-sm">목록으로</a>
+                        <button type="submit" class="btn btn-warning btn-lg px-5 fw-bold text-dark rounded-pill shadow">등록완료</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- SSRF / Open Redirect Tool -->
+        <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-5 border border-info border-opacity-50">
+            <div class="card-header bg-info text-dark py-3 px-4 d-flex align-items-center">
+                <i class="bi bi-link-45deg fs-4 me-2"></i>
+                <h5 class="mb-0 fw-bold">카페 도구: 외부 링크 본문 스크랩</h5>
+                <span class="badge bg-dark text-white ms-auto rounded-pill px-3">SSRF / Redirect 취약</span>
+            </div>
+            <div class="card-body p-4 bg-body-tertiary">
+                <p class="mb-3 text-secondary">사용 포스팅 시 참고할 외부 URL 문서나 이미지를 서버 상에서 미리 불러옵니다. 이 기능은 내부망 검증이나 URL 화이트리스트 필터링이 누락되어 있습니다.</p>
+                <form action="/utils/url_preview" method="GET" target="_blank" class="d-flex shadow-sm rounded-pill overflow-hidden">
+                    <input type="text" class="form-control form-control-lg border-0 bg-white text-dark ps-4" name="url" placeholder="http://example.com 입력" value="http://example.com">
+                    <button type="submit" class="btn btn-dark text-nowrap px-4 fw-bold">가져오기</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script>
+    const easymde = new EasyMDE({
+        element: document.querySelector('textarea[name="content"]'),
+        spellChecker: false,
+        placeholder: "자유롭게 작성해주세요. HTML 태그 및 자바스크립트 스크립트가 그대로 허용됩니다.",
+        status: false,
+        hideIcons: ["guide", "heading"]
+    });
+</script>
+{% endblock %}

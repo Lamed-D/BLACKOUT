@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card bg-dark text-white shadow-sm border-0 rounded-4 overflow-hidden" style="background: linear-gradient(135deg, #1f2937, #111827);">
+            <div class="card-body p-5">
+                <h2 class="fw-bold mb-3"><i class="bi bi-chat-square-text text-info"></i> 자유 게시판</h2>
+                <p class="mb-0 text-secondary fs-5">
+                    자유롭게 글을 남겨주세요! 파일 첨부 및 외부 링크 스크랩도 가능합니다.<br>
+                    <span class="text-warning fs-6 mt-2 d-inline-block"><i class="bi bi-exclamation-triangle-fill"></i> 이 화면은 다양한 해킹 공격(XSS, Upload, SSRF, SQLi)에 취약하게 설계된 학습용 커뮤니티입니다.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 text-center align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th width="10%" class="py-3">번호</th>
+                        <th width="50%" class="py-3">제목</th>
+                        <th width="15%" class="py-3">작성자</th>
+                        <th width="25%" class="py-3">작성일</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in posts %}
+                    <tr>
+                        <td class="text-secondary fw-bold">{{ post.id }}</td>
+                        <td class="text-start ps-4">
+                            <a href="/post/{{ post.id }}" class="text-decoration-none fw-bold fs-5 text-info">
+                                <!-- [VULNERABILITY] Stored XSS -->
+                                {{ post.title | safe }}
+                            </a>
+                            {% if post.file_path %}
+                                <i class="bi bi-paperclip text-warning fs-5 ms-2" title="첨부파일 있음"></i>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary px-3 py-2 rounded-pill">{{ post.author }}</span></td>
+                        <td class="text-secondary small">{{ post.created_at }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="py-5 text-muted">등록된 게시글이 없습니다.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-body-tertiary d-flex justify-content-end py-3 px-4">
+        <a href="/post/write" class="btn btn-warning fw-bold px-4 rounded-pill shadow-sm text-dark"><i class="bi bi-pencil-fill me-1"></i> 글쓰기</a>
+    </div>
+</div>
+{% endblock %}

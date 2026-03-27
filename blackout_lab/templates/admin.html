@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+        <div class="card shadow-lg border-danger border-2 rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-danger text-white p-4">
+                <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock-fill me-2"></i> 카페 시스템 관리 모드 [ADMIN ONLY]</h4>
+            </div>
+            <div class="card-body p-0">
+                <ul class="nav nav-tabs nav-fill bg-body-tertiary border-bottom-0" id="adminTabs" role="tablist" style="border-radius: 0;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active fw-bold py-3 text-secondary" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab"><i class="bi bi-bar-chart-fill me-1"></i> 대시보드 통계</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold py-3 text-secondary" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab"><i class="bi bi-people-fill me-1"></i> 회원 관리</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold py-3 text-secondary" id="posts-tab" data-bs-toggle="tab" data-bs-target="#posts" type="button" role="tab"><i class="bi bi-file-earmark-text-fill me-1"></i> 게시글 관리</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold py-3 text-secondary" id="notices-tab" data-bs-toggle="tab" data-bs-target="#notices" type="button" role="tab"><i class="bi bi-megaphone-fill me-1"></i> 공지사항 관리</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-bold py-3 text-secondary" id="ips-tab" data-bs-toggle="tab" data-bs-target="#ips" type="button" role="tab"><i class="bi bi-pc-display me-1"></i> 유저 접속 기록</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content p-4 p-md-5" id="adminTabsContent">
+                    <!-- Dashboard Tab -->
+                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                        <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-speedometer2 me-2"></i> 서버 종합 현황</h5>
+                        <div class="row g-4 mb-4">
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card border-0 bg-primary bg-opacity-10 text-primary h-100 rounded-4">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-person-hearts fs-1 mb-2"></i>
+                                        <h3 class="fw-bold">{{ stats.users }}</h3>
+                                        <div class="small fw-semibold">총 회원수</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card border-0 bg-success bg-opacity-10 text-success h-100 rounded-4">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-pencil-square fs-1 mb-2"></i>
+                                        <h3 class="fw-bold">{{ stats.posts }}</h3>
+                                        <div class="small fw-semibold">자유게시판 글</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card border-0 bg-warning bg-opacity-10 text-warning h-100 rounded-4">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-chat-dots-fill fs-1 mb-2"></i>
+                                        <h3 class="fw-bold">{{ stats.comments }}</h3>
+                                        <div class="small fw-semibold">작성된 댓글</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-lg-3">
+                                <div class="card border-0 bg-danger bg-opacity-10 text-danger h-100 rounded-4">
+                                    <div class="card-body text-center py-4">
+                                        <i class="bi bi-megaphone fs-1 mb-2"></i>
+                                        <h3 class="fw-bold">{{ stats.notices }}</h3>
+                                        <div class="small fw-semibold">등록된 공지</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Tab -->
+                    <div class="tab-pane fade" id="users" role="tabpanel">
+                        <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-people me-2"></i> 카페 회원 및 권한 관리</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>UID</th>
+                                        <th>아이디</th>
+                                        <th>이메일</th>
+                                        <th>권한</th>
+                                        <th>가입일</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for u in users %}
+                                    <tr>
+                                        <td>{{ u.id }}</td>
+                                        <td class="fw-bold text-primary">{{ u.username }}</td>
+                                        <td class="text-secondary small">{{ u.email or '-' }}</td>
+                                        <td>
+                                            <form action="/admin/user/{{ u.id }}/role" method="POST" class="d-flex align-items-center" style="max-width: 150px;">
+                                                <select name="role" class="form-select form-select-sm {{ 'bg-danger text-white fw-bold' if u.role == 'admin' else '' }}" onchange="this.form.submit()">
+                                                    <option value="user" {% if u.role == 'user' %}selected{% endif %}>User</option>
+                                                    <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>Admin</option>
+                                                </select>
+                                            </form>
+                                        </td>
+                                        <td class="text-secondary small">{{ u.created_at[:10] }}</td>
+                                        <td>
+                                            {% if u.id != session.get('user_id') %}
+                                            <form action="/admin/user/{{ u.id }}/delete" method="POST" onsubmit="return confirm('정말 {{ u.username }} 회원을 강제 탈퇴시키겠습니까? 게시글도 함께 삭제됩니다.');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm"><i class="bi bi-trash"></i> 삭제</button>
+                                            </form>
+                                            {% else %}
+                                            <span class="badge bg-secondary">나 (관리자)</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Posts Tab -->
+                    <div class="tab-pane fade" id="posts" role="tabpanel">
+                        <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-file-earmark-text me-2"></i> 게시글 관리</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>PID</th>
+                                        <th>제목</th>
+                                        <th>작성자</th>
+                                        <th>유형</th>
+                                        <th>작성일</th>
+                                        <th>조회수</th>
+                                        <th>관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in posts %}
+                                    <tr>
+                                        <td>{{ p.id }}</td>
+                                        <td><a href="/post/{{ p.id }}" class="text-decoration-none fw-bold" target="_blank">{{ p.title }}</a></td>
+                                        <td>{{ p.author }}</td>
+                                        <td>
+                                            {% if p.is_notice %}
+                                            <span class="badge bg-danger">공지</span>
+                                            {% else %}
+                                            <span class="badge bg-primary">자유</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-secondary small">{{ p.created_at[:10] }}</td>
+                                        <td>{{ p.views }}</td>
+                                        <td>
+                                            <form action="/admin/post/{{ p.id }}/delete" method="POST" onsubmit="return confirm('진짜 삭제하시겠습니까?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger shadow-sm"><i class="bi bi-trash"></i> 게시글 삭제</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Notices Tab -->
+                    <div class="tab-pane fade" id="notices" role="tabpanel">
+                        <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-megaphone me-2"></i> 신규 공지사항 등록</h5>
+                        <form action="/admin/notice/create" method="POST" class="mb-5 p-4 bg-body-tertiary rounded-4 shadow-sm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">공지 제목</label>
+                                <input type="text" class="form-control bg-white" name="title" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">공지 내용</label>
+                                <textarea class="form-control bg-white" name="content" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger fw-bold shadow-sm px-4"><i class="bi bi-check-lg"></i> 작성 완료</button>
+                        </form>
+
+                        <h5 class="fw-bold mb-3 text-danger">기존 공지사항</h5>
+                        <ul class="list-group list-group-flush">
+                            {% for n in notices %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <div>
+                                    <div class="fw-bold text-dark fs-5">{{ n.title }}</div>
+                                    <div class="text-secondary small mt-1">{{ n.created_at }}</div>
+                                </div>
+                                <form action="/admin/notice/{{ n.id }}/delete" method="POST" onsubmit="return confirm('공지를 내리시겠습니까?');">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm">내리기</button>
+                                </form>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item text-center text-muted py-5">현재 등록된 공지사항이 없습니다.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <!-- IPs Tab -->
+                    <div class="tab-pane fade" id="ips" role="tabpanel">
+                        <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-pc-display me-2"></i> 사용자 로그인 기록 및 IP 보안 모니터링</h5>
+                        <p class="text-secondary small mb-4">로그인 시도 및 가입 시 저장된 접속 IP를 추적합니다.</p>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle text-center">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>로그 ID</th>
+                                        <th>사용자명</th>
+                                        <th>접속 단말 IP</th>
+                                        <th class="text-start">User-Agent 헤더 정보</th>
+                                        <th>최근 접속 일시</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                    <tr>
+                                        <td>{{ log.id }}</td>
+                                        <td class="fw-bold text-primary">{{ log.username }}</td>
+                                        <td class="text-danger fw-bold font-monospace">{{ log.ip_address }}</td>
+                                        <td class="text-secondary small text-start" style="max-width:350px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;" title="{{ log.user_agent }}">{{ log.user_agent }}</td>
+                                        <td class="text-secondary small">{{ log.created_at }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% if not logs %}
+                                    <tr><td colspan="5" class="py-5 text-muted">기록된 접속 로그가 없습니다. 로그인 활동이 발생하면 이곳에 기록됩니다.</td></tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Fix tab active styles
+    document.querySelectorAll('#adminTabs .nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            document.querySelectorAll('#adminTabs .nav-link').forEach(l => {
+                l.classList.remove('text-primary');
+                l.classList.add('text-secondary');
+            });
+            this.classList.remove('text-secondary');
+            this.classList.add('text-primary');
+        });
+    });
+    // Restore tab from hash
+    let hash = window.location.hash;
+    if (hash) {
+        let tab = document.querySelector(`#adminTabs button[data-bs-target="${hash}"]`);
+        if (tab) {
+            new bootstrap.Tab(tab).show();
+            tab.classList.remove('text-secondary');
+            tab.classList.add('text-primary');
+        }
+    } else {
+        document.querySelector('#adminTabs .nav-link.active').classList.remove('text-secondary');
+        document.querySelector('#adminTabs .nav-link.active').classList.add('text-primary');
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-dark text-white p-4 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i> {{ user.username }}님의 프로필</h4>
+                {% if session.get('user_id') == user.id %}
+                <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm">내 프로필 열람 중</span>
+                {% else %}
+                <span class="badge bg-secondary px-3 py-2 rounded-pill shadow-sm">타인 프로필 열람 중</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-4 p-md-5 bg-body">
+                <div class="row align-items-center mb-5">
+                    <div class="col-auto text-center me-3">
+                        <div class="bg-secondary bg-gradient rounded-circle d-flex justify-content-center align-items-center text-white shadow" style="width: 100px; height: 100px; font-size: 3rem;">
+                            {{ user.username[0] | upper }}
+                        </div>
+                        <span class="badge bg-{% if user.role == 'admin' %}danger{% else %}info{% endif %} mt-3 px-3 py-2 rounded-pill shadow-sm">{{ '시스템 관리자' if user.role == 'admin' else '일반 회원' }}</span>
+                    </div>
+                    <div class="col">
+                        <h2 class="fw-bold mb-1">{{ user.username }}</h2>
+                        <p class="text-secondary fs-5 mb-0"><i class="bi bi-envelope me-2"></i>{{ user.email or '이메일 미등록' }}</p>
+                        <p class="text-secondary mb-0 mt-2"><i class="bi bi-calendar-check me-2"></i>가입일: {{ user.created_at[:10] }}</p>
+                    </div>
+                </div>
+                
+                <h5 class="fw-bold text-dark border-bottom pb-3 mb-4"><i class="bi bi-card-text text-primary me-2"></i> 자기소개 (Bio)</h5>
+                <div class="p-4 bg-light rounded-4 mb-5 fs-6 text-body shadow-sm" style="min-height: 120px;">
+                    {% if user.bio %}
+                        {{ user.bio | replace('\n', '<br>') | safe }}
+                    {% else %}
+                        <span class="text-muted fst-italic">작성된 자기소개가 없습니다.</span>
+                    {% endif %}
+                </div>
+
+                <div class="alert border border-secondary border-opacity-25 bg-body-secondary rounded-4 mb-4 shadow-sm">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-shield-lock me-2"></i> 계정 보안 정보 (DB Record)</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2"><strong>고유 번호 (PID):</strong> <span class="text-primary font-monospace">{{ user.id }}</span></li>
+                        <li class="mb-2 text-break"><strong>비밀번호 해시 (MD5):</strong> <code class="bg-dark text-warning p-1 px-2 rounded">{% if user.username == 'admin' %}[보안상 숨김 처리]{% else %}{{ user.password }}{% endif %}</code></li>
+                        <li><strong>최근 접속 IP:</strong> <span class="text-danger fw-bold font-monospace">{{ user.last_ip or '로그인 기록 없음' }}</span></li>
+                    </ul>
+                </div>
+            </div>
+            
+            {% if session.get('user_id') == user.id %}
+            <div class="card-footer bg-body-tertiary border-0 p-4 d-flex justify-content-between">
+                <div>
+                    <a href="/change_pw" class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm"><i class="bi bi-key me-1"></i> 즉시 비밀번호 변경</a>
+                </div>
+                <a href="/profile/edit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm"><i class="bi bi-pencil-square me-2"></i> 프로필 정보 수정</a>
+            </div>
+            {% endif %}
+            
+        </div>
+        
+        <div class="alert border border-warning border-opacity-50 bg-warning bg-opacity-10 rounded-4 p-4 shadow-sm">
+            <h6 class="fw-bold text-warning-emphasis mb-2"><i class="bi bi-info-circle-fill me-2"></i> 모의해킹 실습 포인트 (IDOR / CSRF)</h6>
+            <ul class="mb-0 text-dark small lh-lg">
+                <li>현재 브라우저 주소창에 노출된 <code>user_id={{ user.id }}</code> 파라미터를 다른 숫자(예: <code>1</code>, <code>2</code>)로 자유롭게 바꾸어 보세요. 권한 검증 부재(IDOR)로 인해 타인의 개인정보, DB상 비밀번호 해시, 이메일을 무단으로 조회할 수 있습니다.</li>
+                <li>본인 프로필일 때 노출되는 <strong>[비밀번호 변경]</strong> 기능이 도메인 외부나 자유게시판 본문(XSS)에서 CSRF 공격 트리거로 강제 실행되도록 연계 공격을 구성해 보세요.</li>
+            </ul>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}

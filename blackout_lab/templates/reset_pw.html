@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 50vh;">
+    <div class="col-md-5">
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-4">
+            <div class="card-header bg-danger text-white text-center py-4">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-key-fill me-2"></i> 새 비밀번호 설정</h4>
+            </div>
+            <div class="card-body p-4 p-md-5 bg-body">
+                {% if error %}
+                    <div class="alert alert-danger rounded-3 mb-4"><i class="bi bi-exclamation-octagon-fill me-2"></i> {{ error }}</div>
+                {% endif %}
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label text-secondary fw-bold">새로운 비밀번호</label>
+                        <input type="password" class="form-control form-control-lg shadow-sm" name="new_pw" placeholder="새 비밀번호 입력" required>
+                    </div>
+                    <div class="mb-5">
+                        <label class="form-label text-secondary fw-bold">비밀번호 확인</label>
+                        <input type="password" class="form-control form-control-lg shadow-sm" name="confirm" placeholder="새 비밀번호 재입력" required>
+                    </div>
+                    <button type="submit" class="btn btn-danger btn-lg w-100 fw-bold shadow">비밀번호 변경 완료</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

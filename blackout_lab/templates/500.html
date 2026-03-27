@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-8">
+        <div class="card bg-dark border-danger mb-3">
+            <div class="card-header border-danger text-danger fw-bold">
+                <i class="bi bi-exclamation-triangle"></i> 500 Internal Server Error
+            </div>
+            <div class="card-body">
+                <p>The server encountered an unexpected condition.</p>
+                <div class="bg-black text-success p-3 font-monospace small rounded border border-success">
+                    <div class="text-warning mb-2">// Developer Stack Trace (Leaked intentionally)</div>
+                    <div>Exception in execution: {{ error }}</div>
+                    <div class="mt-2 text-secondary">Check your payload syntax (SQLi, XXE, Deserialization).</div>
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="/" class="btn btn-sm btn-outline-danger">Return Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

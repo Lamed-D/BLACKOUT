@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-secondary text-white p-3"><h4><i class="bi bi-download"></i> 카페 공용 자료실</h4></div>
+            <div class="card-body p-4">
+                <p class="text-secondary fw-bold">서버에 고정된 유용한 기본 파일들을 다운로드 할 수 있습니다.</p>
+                <div class="d-grid gap-2 mt-4">
+                    <a href="/download?file=sample.txt" class="btn btn-outline-secondary text-start p-3 fw-bold"><i class="bi bi-file-earmark-text"></i> 카페 이용 약관 (sample.txt)</a>
+                    <a href="/download?file=../static/malicious_payload.html" class="btn btn-outline-secondary text-start p-3 fw-bold"><i class="bi bi-file-earmark-code"></i> 스터디 실습용 공격 템플릿</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

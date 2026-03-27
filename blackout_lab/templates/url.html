@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Open Redirect / SSRF</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-header bg-info text-dark py-3">
+                    <h3 class="mb-0">외부 리소스 요청 (SSRF / Open Redirect 실습)</h3>
+                </div>
+                <div class="card-body p-4">
+                    <form method="GET">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">타겟 패치(Fetch) 주소 입력</label>
+                            <input type="text" class="form-control form-control-lg" name="target" placeholder="http://..." value="http://example.com" autocomplete="off">
+                            <div class="form-text">입력한 URL의 컨텐츠를 서버 딴에서 읽어옵니다.</div>
+                        </div>
+                        <button type="submit" class="btn btn-info w-100 btn-lg mb-3">응답 데이터 확인하기</button>
+                    </form>
+                    
+                    <hr>
+                    <div class="alert alert-warning border-start border-warning border-4 mt-4">
+                        <h5 class="alert-heading">💡 공격 힌트</h5>
+                        <ul>
+                            <li><strong>Open Redirect:</strong> 외부 악성 링크(예: <code>http://hacker.com</code>)로 연결이 가능한지 테스트해 보세요.</li>
+                            <li><strong>SSRF (서버 측 요청 위조):</strong> 로컬 네트워크 주소(<code>http://127.0.0.1:5000/</code>)나 로컬 파일(<code>file:///c:/Windows/win.ini</code> 등)과 같이 서버가 내부 자원을 반환하도록 조작해 보세요.</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="/" class="text-decoration-none text-secondary">← 메인으로 돌아가기</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

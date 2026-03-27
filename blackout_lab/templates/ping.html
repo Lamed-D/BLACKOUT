@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        {% if allow %}
+        <div class="alert d-flex align-items-start gap-2 mb-3" style="background:rgba(243,139,168,0.12); border:1px solid #f38ba8; border-radius:8px; padding:12px 16px;">
+            <span style="font-size:1.3em;">⚠️</span>
+            <div>
+                <strong style="color:#f38ba8;">로컬 실습 모드 — 실제 명령어 실행 활성화</strong>
+                <div style="font-size:0.85em; margin-top:4px; color:var(--text-muted);">
+                    이 명령어는 <u>현재 서버가 실행 중인 PC (본인 컴퓨터)</u>에서 직접 실행됩니다.<br>
+                    예: <code style="color:#f38ba8;">8.8.8.8; whoami</code> 입력 시 본인 PC의 사용자명이 노출됩니다.
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert d-flex align-items-start gap-2 mb-3" style="background:rgba(137,180,250,0.12); border:1px solid #89b4fa; border-radius:8px; padding:12px 16px;">
+            <span style="font-size:1.3em;">🔒</span>
+            <div>
+                <strong style="color:#89b4fa;">네트워크 공개 모드 — 명령 실행 비활성화됨</strong>
+                <div style="font-size:0.85em; margin-top:4px; color:var(--text-muted);">
+                    <code>HOST = '0.0.0.0'</code> 설정으로 앱이 실행되어 보안을 위해 실제 OS 명령 실행이 자동으로 비활성화되었습니다.<br>
+                    로컬 실습을 원하면 <code>run.py</code>에서 <code>HOST = '127.0.0.1'</code> 으로 변경 후 재시작하세요.
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-header bg-dark text-white p-3"><h4><i class="bi bi-terminal"></i> 카페 서버 네트워크 진단(Ping)</h4></div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">테스트 대상 IP</label>
+                        <input type="text" class="form-control form-control-lg" name="ip"
+                               placeholder="8.8.8.8 등 아이피 입력"
+                               {% if not allow %}disabled{% endif %}>
+                        <div class="form-text mt-2">시스템 <code>ping</code> 명령어를 내부적으로 실행하여 접속 상태를 진단합니다.</div>
+                    </div>
+                    <button type="submit" class="btn btn-dark btn-lg" {% if not allow %}disabled{% endif %}>진단 시작</button>
+                </form>
+                {% if output %}
+                <hr>
+                <div class="bg-dark text-success p-3 rounded font-monospace" style="white-space: pre-wrap;">{{ output }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
