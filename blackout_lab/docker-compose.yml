@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # ───────────────────────────────────────────
+  # 1. 🐍 주방 (백엔드: Flask + Gunicorn)
+  # ───────────────────────────────────────────
+  flask-app:
+    build: .                        # 현재 폴더(blackout_lab)의 Dockerfile로 빌드
+    container_name: blackout_flask
+    expose:
+      - "5000"                      # 외부 직접 노출 없이 내부 네트워크(apache)에만 개방
+    environment:
+      - FLASK_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_NAME=blackout_db
+      - DB_USER=blackout_user
+      - DB_PASSWORD=blackout_pass
+      # ──── 소셜 로그인 키 (값을 직접 채워 넣으세요) ────
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID:-}
+      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET:-}
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID:-}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET:-}
+    volumes:
+      - ./uploads:/blackout_lab/uploads   # 파일 업로드 데이터 유지
+    depends_on:
+      mariadb:
+        condition: service_healthy  # MariaDB 헬스체크 통과 후 Flask 시작
+    networks:
+      - blackout_net
+    restart: unless-stopped
+
+  # ───────────────────────────────────────────
+  # 2. 🌐 홀 매니저 (웹 서버: Apache2 리버스 프록시)
+  # ───────────────────────────────────────────
+  apache-server:
+    image: httpd:2.4
+    container_name: blackout_apache
+    ports:
+      - "8080:8080"                 # 브라우저(8080) ↔ Apache(8080)
+    volumes:
+      # my-site.conf를 아파치 설정 extra 폴더에 마운트
+      - ./my-site.conf:/usr/local/apache2/conf/extra/my-site.conf
+      # httpd.conf에서 mod_proxy를 활성화하고 my-site.conf를 Include하기 위한 커스텀 설정
+      - ./httpd-proxy.conf:/usr/local/apache2/conf/httpd-proxy.conf
+    # 기본 httpd.conf의 Listen 80을 8080으로 바꾸고 우리 설정을 Include
+    command: sh -c "sed -i 's/Listen 80/Listen 8080/' /usr/local/apache2/conf/httpd.conf && echo 'Include /usr/local/apache2/conf/httpd-proxy.conf' >> /usr/local/apache2/conf/httpd.conf && httpd-foreground"
+    depends_on:
+      - flask-app
+    networks:
+      - blackout_net
+    restart: unless-stopped
+
+  # ───────────────────────────────────────────
+  # 3. 🗄️ 데이터베이스 (MariaDB 전용 컨테이너)
+  # ───────────────────────────────────────────
+  mariadb:
+    image: mariadb:10.11
+    container_name: blackout_mariadb
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: blackout_db
+      MYSQL_USER: blackout_user
+      MYSQL_PASSWORD: blackout_pass
+    volumes:
+      - mariadb_data:/var/lib/mysql  # DB 데이터 영구 보존
+      # 최초 실행 시 init_db.sql을 자동으로 실행하여 테이블 & 시드 데이터 생성
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    ports:
+      - "3306:3306"                  # 로컬에서 DB에 직접 접속 가능 (개발용)
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - blackout_net
+    restart: unless-stopped
+
+# ───────────────────────────────────────────
+# 볼륨 및 네트워크 정의
+# ───────────────────────────────────────────
+volumes:
+  mariadb_data:                      # MariaDB 데이터 영구 볼륨
+
+networks:
+  blackout_net:
+    driver: bridge                   # 컨테이너 간 내부 통신 전용 브릿지 네트워크

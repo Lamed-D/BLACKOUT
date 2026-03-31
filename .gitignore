@@ -1,1 +1,46 @@
-/vuln_app
+# 🐍 Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv
+venv/
+ENV/
+
+# 🐳 Docker & 환경 변수
+.env
+.env.*
+!.env.example
+docker-compose.override.yml
+
+# 🗄️ Database
+*.db
+*.sqlite3
+mariadb_data/
+
+# 📤 Uploads (업로드된 파일은 제외하고 폴더 구조만 유지하고 싶을 때)
+blackout_lab/uploads/*
+!blackout_lab/uploads/.gitkeep
+
+# 💻 IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

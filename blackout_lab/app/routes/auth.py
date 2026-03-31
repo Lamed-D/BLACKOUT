@@ -22,14 +22,16 @@ def login():
         hashed   = md5(password)                          # [VULN] MD5 no-salt
 
         conn = get_db_connection()
-        # [VULNERABILITY] SQL Injection — username not parameterised
+        cur  = conn.cursor()
+        # [VULNERABILITY] SQL Injection — username not parameterised (raw f-string)
         query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{hashed}'"
         log_telemetry('SQL', query)
         try:
-            user = conn.execute(query).fetchone()
-            conn.close()
+            cur.execute(query)
+            user = cur.fetchone()
+            cur.close(); conn.close()
         except Exception as e:
-            conn.close()
+            cur.close(); conn.close()
             return f"<h2>DB Error</h2><pre>{e}</pre><p>Query: {query}</p>"
 
         if user:
@@ -41,11 +43,11 @@ def login():
             token   = jwt.encode(payload, current_app.config['SECRET_KEY'], algorithm='HS256')
 
             conn2 = get_db_connection()
-            conn2.execute("INSERT INTO login_logs (user_id, username, ip_address, user_agent) VALUES (?,?,?,?)",
+            cur2  = conn2.cursor()
+            cur2.execute("INSERT INTO login_logs (user_id, username, ip_address, user_agent) VALUES (%s,%s,%s,%s)",
                           (user['id'], user['username'], request.remote_addr, str(request.user_agent)))
-            conn2.execute("UPDATE users SET last_ip=? WHERE id=?", (request.remote_addr, user['id']))
-            conn2.commit()
-            conn2.close()
+            cur2.execute("UPDATE users SET last_ip=%s WHERE id=%s", (request.remote_addr, user['id']))
+            conn2.commit(); cur2.close(); conn2.close()
 
             resp = make_response(redirect(url_for('board.index')))
             resp.set_cookie('role',      user['role'])     # [VULN] Cookie manipulation
@@ -73,23 +75,25 @@ def register():
             return render_template('register.html', error='비밀번호가 일치하지 않습니다.')
 
         conn = get_db_connection()
+        cur  = conn.cursor()
         # [VULNERABILITY] SQL Injection in registration (username check)
         check_q = f"SELECT id FROM users WHERE username = '{username}'"
         log_telemetry('SQL', check_q)
         try:
-            existing = conn.execute(check_q).fetchone()
+            cur.execute(check_q)
+            existing = cur.fetchone()
         except Exception as e:
-            conn.close()
+            cur.close(); conn.close()
             return f"<h2>DB Error</h2><pre>{e}</pre><p>Query: {check_q}</p>"
 
         if existing:
-            conn.close()
+            cur.close(); conn.close()
             return render_template('register.html', error='이미 사용 중인 아이디입니다.')
 
         hashed = md5(password)
-        conn.execute("INSERT INTO users (username, name, email, password, last_ip) VALUES (?,?,?,?,?)",
-                     (username, name, email, hashed, request.remote_addr))
-        conn.commit(); conn.close()
+        cur.execute("INSERT INTO users (username, name, email, password, last_ip) VALUES (%s,%s,%s,%s,%s)",
+                    (username, name, email, hashed, request.remote_addr))
+        conn.commit(); cur.close(); conn.close()
         return redirect(url_for('auth.login'))
 
     return render_template('register.html')
@@ -111,8 +115,10 @@ def find_id():
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
         conn  = get_db_connection()
-        user  = conn.execute("SELECT username FROM users WHERE email = ?", (email,)).fetchone()
-        conn.close()
+        cur   = conn.cursor()
+        cur.execute("SELECT username FROM users WHERE email = %s", (email,))
+        user  = cur.fetchone()
+        cur.close(); conn.close()
         result = user['username'] if user else '해당 이메일로 가입된 계정이 없습니다.'
     return render_template('find_id.html', result=result)
 
@@ -125,9 +131,10 @@ def find_pw():
         username = request.form.get('username', '').strip()
         email    = request.form.get('email', '').strip()
         conn     = get_db_connection()
-        user     = conn.execute("SELECT id FROM users WHERE username=? AND email=?",
-                                (username, email)).fetchone()
-        conn.close()
+        cur      = conn.cursor()
+        cur.execute("SELECT id FROM users WHERE username=%s AND email=%s", (username, email))
+        user = cur.fetchone()
+        cur.close(); conn.close()
         if user:
             session['reset_user_id'] = user['id']
             return redirect(url_for('auth.reset_pw'))
@@ -146,8 +153,9 @@ def reset_pw():
             return render_template('reset_pw.html', error='비밀번호가 일치하지 않습니다.')
         hashed = md5(new_pw)
         conn = get_db_connection()
-        conn.execute("UPDATE users SET password=? WHERE id=?", (hashed, session['reset_user_id']))
-        conn.commit(); conn.close()
+        cur  = conn.cursor()
+        cur.execute("UPDATE users SET password=%s WHERE id=%s", (hashed, session['reset_user_id']))
+        conn.commit(); cur.close(); conn.close()
         session.pop('reset_user_id', None)
         return redirect(url_for('auth.login'))
     return render_template('reset_pw.html')
@@ -164,8 +172,9 @@ def change_pw():
         if new_pw:
             hashed = md5(new_pw)
             conn   = get_db_connection()
-            conn.execute("UPDATE users SET password=? WHERE username=?", (hashed, session['user']))
-            conn.commit(); conn.close()
+            cur    = conn.cursor()
+            cur.execute("UPDATE users SET password=%s WHERE username=%s", (hashed, session['user']))
+            conn.commit(); cur.close(); conn.close()
             return "<script>alert('비밀번호가 변경되었습니다.'); location.href='/';</script>"
     return render_template('change_pw.html')
 
@@ -178,8 +187,10 @@ def profile():
     if not user_id:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
-    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-    conn.close()
+    cur  = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    user = cur.fetchone()
+    cur.close(); conn.close()
     if not user:
         return "사용자를 찾을 수 없습니다."
     return render_template('profile.html', user=user)
@@ -191,13 +202,15 @@ def profile_edit():
     if 'user' not in session:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
-    user = conn.execute("SELECT * FROM users WHERE id=?", (session['user_id'],)).fetchone()
+    cur  = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE id=%s", (session['user_id'],))
+    user = cur.fetchone()
     if request.method == 'POST':
         email = request.form.get('email', '').strip()
         bio   = request.form.get('bio', '').strip()
-        conn.execute("UPDATE users SET email=?, bio=? WHERE id=?",
-                     (email, bio, session['user_id']))
-        conn.commit(); conn.close()
+        cur.execute("UPDATE users SET email=%s, bio=%s WHERE id=%s",
+                    (email, bio, session['user_id']))
+        conn.commit(); cur.close(); conn.close()
         return redirect(url_for('auth.profile', user_id=session['user_id']))
-    conn.close()
+    cur.close(); conn.close()
     return render_template('profile_edit.html', user=user)

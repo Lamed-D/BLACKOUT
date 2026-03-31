@@ -24,7 +24,7 @@
                             <input type="text" class="form-control border-start-0 ps-0" name="username" placeholder="아이디를 입력하세요" autocomplete="off" required>
                         </div>
                     </div>
-                    <div class="mb-5">
+                    <div class="mb-4">
                         <label class="form-label text-secondary fw-bold">비밀번호</label>
                         <div class="input-group input-group-lg shadow-sm">
                             <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-key text-secondary"></i></span>
@@ -40,6 +40,35 @@
                         <a href="/register" class="text-decoration-none text-primary small fw-bold"><i class="bi bi-person-plus-fill me-1"></i>회원가입</a>
                     </div>
                 </form>
+
+                <!-- 소셜 로그인 구분선 -->
+                <div class="d-flex align-items-center my-4">
+                    <hr class="flex-grow-1"><span class="mx-3 text-muted small fw-bold">또는 소셜 계정으로 로그인</span><hr class="flex-grow-1">
+                </div>
+
+                <!-- 소셜 로그인 버튼 3개 -->
+                <div class="d-grid gap-2">
+                    <!-- Google -->
+                    <a href="/login/google/" id="btn-google-login"
+                       class="btn btn-outline-secondary fw-semibold d-flex align-items-center justify-content-center gap-2 py-2">
+                        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.5l7.8 6C12.4 13.3 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17z"/><path fill="#FBBC05" d="M10.6 28.5A14.6 14.6 0 0 1 9.5 24c0-1.6.3-3.1.8-4.5l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.5l8.1-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.6 2.3-7.7 2.3-6.3 0-11.6-3.8-13.4-9.5l-8.1 6C6.7 42.5 14.7 48 24 48z"/></svg>
+                        Google로 계속하기
+                    </a>
+                    <!-- Naver -->
+                    <a href="/oauth/naver/login" id="btn-naver-login"
+                       class="btn fw-semibold d-flex align-items-center justify-content-center gap-2 py-2 text-white"
+                       style="background-color: #03C75A;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z"/></svg>
+                        네이버로 계속하기
+                    </a>
+                    <!-- Kakao -->
+                    <a href="/oauth/kakao/login" id="btn-kakao-login"
+                       class="btn fw-semibold d-flex align-items-center justify-content-center gap-2 py-2"
+                       style="background-color: #FEE500; color: #191919;">
+                        <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#191919" d="M12 3C6.477 3 2 6.477 2 10.727c0 2.716 1.688 5.1 4.228 6.563L5.2 21l4.663-3.08A11.3 11.3 0 0 0 12 18.454c5.523 0 10-3.477 10-7.727S17.523 3 12 3z"/></svg>
+                        카카오로 계속하기
+                    </a>
+                </div>
             </div>
             
             <div class="card-footer bg-body-tertiary border-0 p-4">

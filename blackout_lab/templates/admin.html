@@ -29,41 +29,117 @@
                     <!-- Dashboard Tab -->
                     <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
                         <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-speedometer2 me-2"></i> 서버 종합 현황</h5>
+
+                        <!-- [HIDDEN DATA for JS] -->
+                        <div id="chart-data" class="d-none"
+                             data-posts="{{ stats.posts }}"
+                             data-comments="{{ stats.comments }}"
+                             data-notices="{{ stats.notices }}"
+                             data-u-admin="{{ role_stats.admin }}"
+                             data-u-user="{{ role_stats.user }}"
+                             data-o-google="{{ oauth_stats.google }}"
+                             data-o-naver="{{ oauth_stats.naver }}"
+                             data-o-kakao="{{ oauth_stats.kakao }}"
+                             data-o-normal="{{ oauth_stats.normal }}"></div>
+
+                        <!-- 통계 카드 4개 -->
                         <div class="row g-4 mb-4">
                             <div class="col-sm-6 col-lg-3">
-                                <div class="card border-0 bg-primary bg-opacity-10 text-primary h-100 rounded-4">
+                                <div class="card border-0 bg-primary bg-opacity-10 text-primary h-100 rounded-4 shadow-sm border-start border-4 border-primary">
                                     <div class="card-body text-center py-4">
-                                        <i class="bi bi-person-hearts fs-1 mb-2"></i>
-                                        <h3 class="fw-bold">{{ stats.users }}</h3>
-                                        <div class="small fw-semibold">총 회원수</div>
+                                        <i class="bi bi-people-fill fs-1 mb-2"></i>
+                                        <h3 class="fw-bold mb-0">{{ stats.users }}</h3>
+                                        <div class="small fw-semibold opacity-75">총 회원수</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-lg-3">
-                                <div class="card border-0 bg-success bg-opacity-10 text-success h-100 rounded-4">
+                                <div class="card border-0 bg-success bg-opacity-10 text-success h-100 rounded-4 shadow-sm border-start border-4 border-success">
                                     <div class="card-body text-center py-4">
-                                        <i class="bi bi-pencil-square fs-1 mb-2"></i>
-                                        <h3 class="fw-bold">{{ stats.posts }}</h3>
-                                        <div class="small fw-semibold">자유게시판 글</div>
+                                        <i class="bi bi-journal-text fs-1 mb-2"></i>
+                                        <h3 class="fw-bold mb-0">{{ stats.posts }}</h3>
+                                        <div class="small fw-semibold opacity-75">게시글 수</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-lg-3">
-                                <div class="card border-0 bg-warning bg-opacity-10 text-warning h-100 rounded-4">
+                                <div class="card border-0 bg-warning bg-opacity-10 text-warning h-100 rounded-4 shadow-sm border-start border-4 border-warning">
                                     <div class="card-body text-center py-4">
-                                        <i class="bi bi-chat-dots-fill fs-1 mb-2"></i>
-                                        <h3 class="fw-bold">{{ stats.comments }}</h3>
-                                        <div class="small fw-semibold">작성된 댓글</div>
+                                        <i class="bi bi-chat-left-dots-fill fs-1 mb-2"></i>
+                                        <h3 class="fw-bold mb-0">{{ stats.comments }}</h3>
+                                        <div class="small fw-semibold opacity-75">댓글 수</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-sm-6 col-lg-3">
-                                <div class="card border-0 bg-danger bg-opacity-10 text-danger h-100 rounded-4">
+                                <div class="card border-0 bg-danger bg-opacity-10 text-danger h-100 rounded-4 shadow-sm border-start border-4 border-danger">
                                     <div class="card-body text-center py-4">
-                                        <i class="bi bi-megaphone fs-1 mb-2"></i>
-                                        <h3 class="fw-bold">{{ stats.notices }}</h3>
-                                        <div class="small fw-semibold">등록된 공지</div>
+                                        <i class="bi bi-lightning-charge-fill fs-1 mb-2"></i>
+                                        <h3 class="fw-bold mb-0">{{ stats.notices }}</h3>
+                                        <div class="small fw-semibold opacity-75">공지사항</div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 차트 + 소셜 현황 -->
+                        <div class="row g-4 mb-4">
+                            <!-- 콘텐츠 비율 도넛 차트 -->
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm rounded-4 h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-pie-chart-fill me-1 text-primary"></i> 콘텐츠 구성 비율</h6>
+                                        <canvas id="contentChart" height="220"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 회원 권한 비율 -->
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm rounded-4 h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-person-badge-fill me-1 text-success"></i> 회원 권한 분포</h6>
+                                        <canvas id="roleChart" height="220"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 소셜 로그인 가입 현황 -->
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm rounded-4 h-100">
+                                    <div class="card-body">
+                                        <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-diagram-3-fill me-1 text-warning"></i> 가입 경로 (소셜 연동)</h6>
+                                        <canvas id="oauthChart" height="220"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 최근 접속 요약 테이블 -->
+                        <div class="card border-0 shadow-sm rounded-4">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-activity me-1 text-danger"></i> 최근 로그인 활동 (최신 5건)</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>사용자</th>
+                                                <th>IP</th>
+                                                <th>일시</th>
+                                                <th>User-Agent</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for log in logs[:5] %}
+                                            <tr>
+                                                <td class="fw-bold text-primary">{{ log.username }}</td>
+                                                <td class="font-monospace text-danger small">{{ log.ip_address }}</td>
+                                                <td class="text-secondary small">{{ log.created_at }}</td>
+                                                <td class="text-muted small text-truncate" style="max-width:250px;" title="{{ log.user_agent }}">{{ log.user_agent }}</td>
+                                            </tr>
+                                            {% else %}
+                                            <tr><td colspan="4" class="text-center text-muted py-3">로그인 기록 없음</td></tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -231,30 +307,92 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-    // Fix tab active styles
-    document.querySelectorAll('#adminTabs .nav-link').forEach(link => {
-        link.addEventListener('click', function() {
-            document.querySelectorAll('#adminTabs .nav-link').forEach(l => {
-                l.classList.remove('text-primary');
-                l.classList.add('text-secondary');
+    document.addEventListener('DOMContentLoaded', () => {
+        // ── 0. 데이터 로드 (HTML data-attributes 에서 가져옴) ─────
+        const dataEl = document.getElementById('chart-data');
+        const _D = {
+            posts:    parseInt(dataEl.dataset.posts),
+            comments: parseInt(dataEl.dataset.comments),
+            notices:  parseInt(dataEl.dataset.notices),
+            uAdmin:   parseInt(dataEl.dataset.uAdmin),
+            uUser:    parseInt(dataEl.dataset.uUser),
+            oNormal:  parseInt(dataEl.dataset.oNormal),
+            oGoogle:  parseInt(dataEl.dataset.oGoogle),
+            oNaver:   parseInt(dataEl.dataset.oNaver),
+            oKakao:   parseInt(dataEl.dataset.oKakao)
+        };
+
+        // ── 1. 탭 스타일 제어 ──────────────────────────────────
+        document.querySelectorAll('#adminTabs .nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                document.querySelectorAll('#adminTabs .nav-link').forEach(l => {
+                    l.classList.remove('text-primary'); l.classList.add('text-secondary');
+                });
+                this.classList.remove('text-secondary'); this.classList.add('text-primary');
             });
-            this.classList.remove('text-secondary');
-            this.classList.add('text-primary');
+        });
+        const activeHash = window.location.hash;
+        if (activeHash) {
+            const activeTab = document.querySelector(`#adminTabs button[data-bs-target="${activeHash}"]`);
+            if (activeTab) { new bootstrap.Tab(activeTab).show(); activeTab.classList.replace('text-secondary','text-primary'); }
+        } else {
+            const currentActive = document.querySelector('#adminTabs .nav-link.active');
+            if(currentActive) currentActive.classList.replace('text-secondary','text-primary');
+        }
+
+        // ── 2. Chart.js 공통 옵션 ──────────────────────────────
+        const donutOpts = {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } },
+            cutout: '65%',
+        };
+
+        // ── 3. 콘텐츠 구성 비율 ─────────────────────────────────
+        new Chart(document.getElementById('contentChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['게시글', '댓글', '공지사항'],
+                datasets: [{ 
+                    data: [_D.posts, _D.comments, _D.notices],
+                    backgroundColor: ['#0d6efd', '#ffc107', '#dc3545'], 
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: donutOpts,
+        });
+
+        // ── 4. 회원 권한 분포 ────────────────────────────────────
+        new Chart(document.getElementById('roleChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['일반 회원', '관리자'],
+                datasets: [{ 
+                    data: [_D.uUser, _D.uAdmin],
+                    backgroundColor: ['#198754', '#dc3545'], 
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: donutOpts,
+        });
+
+        // ── 5. 가입 경로 (소셜 연동) ─────────────────────────────
+        new Chart(document.getElementById('oauthChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['직접 가입', 'Google', 'Naver', 'Kakao'],
+                datasets: [{ 
+                    data: [_D.oNormal, _D.oGoogle, _D.oNaver, _D.oKakao],
+                    backgroundColor: ['#6c757d', '#4285F4', '#03C75A', '#FEE500'], 
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: donutOpts,
         });
     });
-    // Restore tab from hash
-    let hash = window.location.hash;
-    if (hash) {
-        let tab = document.querySelector(`#adminTabs button[data-bs-target="${hash}"]`);
-        if (tab) {
-            new bootstrap.Tab(tab).show();
-            tab.classList.remove('text-secondary');
-            tab.classList.add('text-primary');
-        }
-    } else {
-        document.querySelector('#adminTabs .nav-link.active').classList.remove('text-secondary');
-        document.querySelector('#adminTabs .nav-link.active').classList.add('text-primary');
-    }
 </script>
 {% endblock %}

@@ -9,26 +9,32 @@ bp = Blueprint('board', __name__)
 # ── Index / Board List ────────────────────────────────────────
 @bp.route('/')
 def index():
-    conn    = get_db_connection()
-    notices = conn.execute('SELECT * FROM notices ORDER BY created_at DESC').fetchall()
+    conn = get_db_connection()
+    cur  = conn.cursor()
+    cur.execute('SELECT * FROM notices ORDER BY created_at DESC')
+    notices = cur.fetchall()
     page    = max(1, request.args.get('page', 1, type=int))
     search  = request.args.get('q', '').strip()
     per     = 10
 
     if search:
         # [VULNERABILITY] Stored XSS — search term reflected without escaping in index.html
-        total = conn.execute("SELECT COUNT(*) FROM posts WHERE (title LIKE ? OR content LIKE ?)",
-                             (f'%{search}%', f'%{search}%')).fetchone()[0]
-        posts = conn.execute(
-            "SELECT * FROM posts WHERE (title LIKE ? OR content LIKE ?) "
-            "ORDER BY created_at DESC LIMIT ? OFFSET ?",
-            (f'%{search}%', f'%{search}%', per, (page-1)*per)).fetchall()
+        cur.execute("SELECT COUNT(*) as cnt FROM posts WHERE (title LIKE %s OR content LIKE %s)",
+                    (f'%{search}%', f'%{search}%'))
+        total = cur.fetchone()['cnt']
+        cur.execute(
+            "SELECT * FROM posts WHERE (title LIKE %s OR content LIKE %s) "
+            "ORDER BY created_at DESC LIMIT %s OFFSET %s",
+            (f'%{search}%', f'%{search}%', per, (page-1)*per))
+        posts = cur.fetchall()
     else:
-        total = conn.execute("SELECT COUNT(*) FROM posts").fetchone()[0]
-        posts = conn.execute(
-            "SELECT * FROM posts ORDER BY created_at DESC LIMIT ? OFFSET ?",
-            (per, (page-1)*per)).fetchall()
-    conn.close()
+        cur.execute("SELECT COUNT(*) as cnt FROM posts")
+        total = cur.fetchone()['cnt']
+        cur.execute(
+            "SELECT * FROM posts ORDER BY created_at DESC LIMIT %s OFFSET %s",
+            (per, (page-1)*per))
+        posts = cur.fetchall()
+    cur.close(); conn.close()
 
     total_pages = max(1, (total + per - 1) // per)
     resp = make_response(render_template('index.html',
@@ -53,9 +59,10 @@ def board_write():
         content = request.form.get('content', '')          # [VULN] Stored XSS — no sanitisation
 
         conn = get_db_connection()
-        conn.execute('INSERT INTO posts (title, content, author_id, author) VALUES (?,?,?,?)',
-                     (title, content, session['user_id'], session['user']))
-        post_id = conn.execute('SELECT last_insert_rowid()').fetchone()[0]
+        cur  = conn.cursor()
+        cur.execute('INSERT INTO posts (title, content, author_id, author) VALUES (%s,%s,%s,%s)',
+                    (title, content, session['user_id'], session['user']))
+        post_id = cur.lastrowid
 
         # File attachments
         for f in request.files.getlist('files'):
@@ -64,9 +71,9 @@ def board_write():
                 saved    = uuid.uuid4().hex + ext
                 # [VULNERABILITY] Unrestricted File Upload — no extension whitelist
                 f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], saved))
-                conn.execute('INSERT INTO files (post_id, filename, orig_name, size) VALUES (?,?,?,?)',
-                             (post_id, saved, f.filename, 0))
-        conn.commit(); conn.close()
+                cur.execute('INSERT INTO files (post_id, filename, orig_name, size) VALUES (%s,%s,%s,%s)',
+                            (post_id, saved, f.filename, 0))
+        conn.commit(); cur.close(); conn.close()
         return redirect(url_for('board.board_view', post_id=post_id))
 
     return render_template('board_write.html')
@@ -76,26 +83,30 @@ def board_write():
 @bp.route('/post/<int:post_id>')
 def board_view(post_id):
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
+    cur  = conn.cursor()
+    cur.execute('SELECT * FROM posts WHERE id=%s', (post_id,))
+    post = cur.fetchone()
     if not post:
-        conn.close()
+        cur.close(); conn.close()
         return "게시글을 찾을 수 없습니다.", 404
 
     # Increment view count
-    conn.execute('UPDATE posts SET views=views+1 WHERE id=?', (post_id,))
+    cur.execute('UPDATE posts SET views=views+1 WHERE id=%s', (post_id,))
 
-    files    = conn.execute('SELECT * FROM files WHERE post_id=?', (post_id,)).fetchall()
-    likes    = conn.execute('SELECT COUNT(*) FROM post_likes WHERE post_id=?', (post_id,)).fetchone()[0]
+    cur.execute('SELECT * FROM files WHERE post_id=%s', (post_id,))
+    files = cur.fetchall()
+    cur.execute('SELECT COUNT(*) as cnt FROM post_likes WHERE post_id=%s', (post_id,))
+    likes = cur.fetchone()['cnt']
     user_liked = False
     if 'user_id' in session:
-        row = conn.execute('SELECT 1 FROM post_likes WHERE post_id=? AND user_id=?',
-                           (post_id, session['user_id'])).fetchone()
-        user_liked = row is not None
+        cur.execute('SELECT 1 FROM post_likes WHERE post_id=%s AND user_id=%s',
+                    (post_id, session['user_id']))
+        user_liked = cur.fetchone() is not None
 
     # Comments (flat fetch, parent_id used for nesting in template)
-    comments = conn.execute(
-        'SELECT * FROM comments WHERE post_id=? ORDER BY created_at ASC', (post_id,)).fetchall()
-    conn.commit(); conn.close()
+    cur.execute('SELECT * FROM comments WHERE post_id=%s ORDER BY created_at ASC', (post_id,))
+    comments = cur.fetchall()
+    conn.commit(); cur.close(); conn.close()
 
     return render_template('board_view.html',
                            post=post, files=files,
@@ -107,14 +118,17 @@ def board_view(post_id):
 @bp.route('/notice/<int:notice_id>')
 def notice_view(notice_id):
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM notices WHERE id=?', (notice_id,)).fetchone()
+    cur  = conn.cursor()
+    cur.execute('SELECT * FROM notices WHERE id=%s', (notice_id,))
+    post = cur.fetchone()
     if not post:
-        conn.close()
+        cur.close(); conn.close()
         return "공지사항을 찾을 수 없습니다.", 404
 
-    conn.execute('UPDATE notices SET views=views+1 WHERE id=?', (notice_id,))
-    files = conn.execute('SELECT * FROM files WHERE notice_id=?', (notice_id,)).fetchall()
-    conn.commit(); conn.close()
+    cur.execute('UPDATE notices SET views=views+1 WHERE id=%s', (notice_id,))
+    cur.execute('SELECT * FROM files WHERE notice_id=%s', (notice_id,))
+    files = cur.fetchall()
+    conn.commit(); cur.close(); conn.close()
 
     return render_template('board_view.html', post=post, files=files, is_notice=True)
 
@@ -125,35 +139,38 @@ def board_edit(post_id):
     if 'user' not in session:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
+    cur  = conn.cursor()
+    cur.execute('SELECT * FROM posts WHERE id=%s', (post_id,))
+    post = cur.fetchone()
     if not post:
-        conn.close()
+        cur.close(); conn.close()
         return "게시글을 찾을 수 없습니다.", 404
 
     # Only author or admin can edit
     role = request.cookies.get('role', session.get('role', 'user'))
     if post['author_id'] != session.get('user_id') and role != 'admin':
-        conn.close()
+        cur.close(); conn.close()
         return "수정 권한이 없습니다.", 403
 
     if request.method == 'POST':
         title   = request.form.get('title', '')
         content = request.form.get('content', '')
-        conn.execute('UPDATE posts SET title=?, content=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
-                     (title, content, post_id))
+        cur.execute('UPDATE posts SET title=%s, content=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s',
+                    (title, content, post_id))
         # New attachments
         for f in request.files.getlist('files'):
             if f and f.filename:
                 ext   = os.path.splitext(f.filename)[1]
                 saved = uuid.uuid4().hex + ext
                 f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], saved))
-                conn.execute('INSERT INTO files (post_id, filename, orig_name) VALUES (?,?,?)',
-                             (post_id, saved, f.filename))
-        conn.commit(); conn.close()
+                cur.execute('INSERT INTO files (post_id, filename, orig_name) VALUES (%s,%s,%s)',
+                            (post_id, saved, f.filename))
+        conn.commit(); cur.close(); conn.close()
         return redirect(url_for('board.board_view', post_id=post_id))
 
-    files = conn.execute('SELECT * FROM files WHERE post_id=?', (post_id,)).fetchall()
-    conn.close()
+    cur.execute('SELECT * FROM files WHERE post_id=%s', (post_id,))
+    files = cur.fetchall()
+    cur.close(); conn.close()
     return render_template('board_edit.html', post=post, files=files)
 
 
@@ -163,19 +180,21 @@ def board_delete(post_id):
     if 'user' not in session:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
-    post = conn.execute('SELECT * FROM posts WHERE id=?', (post_id,)).fetchone()
+    cur  = conn.cursor()
+    cur.execute('SELECT * FROM posts WHERE id=%s', (post_id,))
+    post = cur.fetchone()
     if not post:
-        conn.close()
+        cur.close(); conn.close()
         return "게시글을 찾을 수 없습니다.", 404
     role = request.cookies.get('role', session.get('role', 'user'))
     if post['author_id'] != session.get('user_id') and role != 'admin':
-        conn.close()
+        cur.close(); conn.close()
         return "삭제 권한이 없습니다.", 403
-    conn.execute('DELETE FROM comments WHERE post_id=?', (post_id,))
-    conn.execute('DELETE FROM post_likes WHERE post_id=?', (post_id,))
-    conn.execute('DELETE FROM files WHERE post_id=?', (post_id,))
-    conn.execute('DELETE FROM posts WHERE id=?', (post_id,))
-    conn.commit(); conn.close()
+    cur.execute('DELETE FROM comments WHERE post_id=%s', (post_id,))
+    cur.execute('DELETE FROM post_likes WHERE post_id=%s', (post_id,))
+    cur.execute('DELETE FROM files WHERE post_id=%s', (post_id,))
+    cur.execute('DELETE FROM posts WHERE id=%s', (post_id,))
+    conn.commit(); cur.close(); conn.close()
     return redirect(url_for('board.index'))
 
 
@@ -185,18 +204,21 @@ def post_like(post_id):
     if 'user' not in session:
         return jsonify({'error': 'login required'}), 401
     conn = get_db_connection()
-    existing = conn.execute('SELECT 1 FROM post_likes WHERE post_id=? AND user_id=?',
-                            (post_id, session['user_id'])).fetchone()
+    cur  = conn.cursor()
+    cur.execute('SELECT 1 FROM post_likes WHERE post_id=%s AND user_id=%s',
+                (post_id, session['user_id']))
+    existing = cur.fetchone()
     if existing:
-        conn.execute('DELETE FROM post_likes WHERE post_id=? AND user_id=?',
-                     (post_id, session['user_id']))
+        cur.execute('DELETE FROM post_likes WHERE post_id=%s AND user_id=%s',
+                    (post_id, session['user_id']))
         liked = False
     else:
-        conn.execute('INSERT INTO post_likes (post_id, user_id) VALUES (?,?)',
-                     (post_id, session['user_id']))
+        cur.execute('INSERT INTO post_likes (post_id, user_id) VALUES (%s,%s)',
+                    (post_id, session['user_id']))
         liked = True
-    count = conn.execute('SELECT COUNT(*) FROM post_likes WHERE post_id=?', (post_id,)).fetchone()[0]
-    conn.commit(); conn.close()
+    cur.execute('SELECT COUNT(*) as cnt FROM post_likes WHERE post_id=%s', (post_id,))
+    count = cur.fetchone()['cnt']
+    conn.commit(); cur.close(); conn.close()
     return jsonify({'liked': liked, 'count': count})
 
 
@@ -209,10 +231,11 @@ def add_comment(post_id):
     parent_id = request.form.get('parent_id') or None  # for nested replies
     if content:
         conn = get_db_connection()
+        cur  = conn.cursor()
         # [VULNERABILITY] Stored XSS — comment content not sanitised
-        conn.execute('INSERT INTO comments (post_id, author_id, author, content, parent_id) VALUES (?,?,?,?,?)',
-                     (post_id, session['user_id'], session['user'], content, parent_id))
-        conn.commit(); conn.close()
+        cur.execute('INSERT INTO comments (post_id, author_id, author, content, parent_id) VALUES (%s,%s,%s,%s,%s)',
+                    (post_id, session['user_id'], session['user'], content, parent_id))
+        conn.commit(); cur.close(); conn.close()
     return redirect(url_for('board.board_view', post_id=post_id) + '#comments')
 
 
@@ -223,13 +246,15 @@ def edit_comment(cid):
         return redirect(url_for('auth.login'))
     content = request.form.get('content', '').strip()
     conn    = get_db_connection()
-    c       = conn.execute('SELECT * FROM comments WHERE id=?', (cid,)).fetchone()
+    cur     = conn.cursor()
+    cur.execute('SELECT * FROM comments WHERE id=%s', (cid,))
+    c = cur.fetchone()
     if c and (c['author_id'] == session.get('user_id') or request.cookies.get('role', session.get('role')) == 'admin'):
-        conn.execute('UPDATE comments SET content=?, updated_at=CURRENT_TIMESTAMP WHERE id=?',
-                     (content, cid))
+        cur.execute('UPDATE comments SET content=%s, updated_at=CURRENT_TIMESTAMP WHERE id=%s',
+                    (content, cid))
         conn.commit()
     post_id = c['post_id'] if c else 1
-    conn.close()
+    cur.close(); conn.close()
     return redirect(url_for('board.board_view', post_id=post_id) + '#comments')
 
 
@@ -239,13 +264,15 @@ def delete_comment(cid):
     if 'user' not in session:
         return redirect(url_for('auth.login'))
     conn = get_db_connection()
-    c    = conn.execute('SELECT * FROM comments WHERE id=?', (cid,)).fetchone()
+    cur  = conn.cursor()
+    cur.execute('SELECT * FROM comments WHERE id=%s', (cid,))
+    c = cur.fetchone()
     if c and (c['author_id'] == session.get('user_id') or request.cookies.get('role', session.get('role')) == 'admin'):
-        conn.execute('DELETE FROM comments WHERE parent_id=?', (cid,))
-        conn.execute('DELETE FROM comments WHERE id=?', (cid,))
+        cur.execute('DELETE FROM comments WHERE parent_id=%s', (cid,))
+        cur.execute('DELETE FROM comments WHERE id=%s', (cid,))
         conn.commit()
     post_id = c['post_id'] if c else 1
-    conn.close()
+    cur.close(); conn.close()
     return redirect(url_for('board.board_view', post_id=post_id) + '#comments')
 
 
@@ -253,8 +280,10 @@ def delete_comment(cid):
 @bp.route('/file/<int:fid>')
 def file_download(fid):
     conn = get_db_connection()
-    f    = conn.execute('SELECT * FROM files WHERE id=?', (fid,)).fetchone()
-    conn.close()
+    cur  = conn.cursor()
+    cur.execute('SELECT * FROM files WHERE id=%s', (fid,))
+    f = cur.fetchone()
+    cur.close(); conn.close()
     if not f:
         return "파일을 찾을 수 없습니다.", 404
     return send_from_directory(current_app.config['UPLOAD_FOLDER'], f['filename'],
