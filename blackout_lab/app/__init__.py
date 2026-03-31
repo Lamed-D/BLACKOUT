@@ -36,7 +36,7 @@ def create_app(allow_cmd_exec: bool = True):
     app.register_blueprint(admin_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(oauth_bp)
-    app.register_blueprint(google_bp, url_prefix='/login/google', strict_slashes=False)  # Flask-Dance Google
+    app.register_blueprint(google_bp, url_prefix='/login')  # Flask-Dance Google
     
     from flask import render_template
     @app.errorhandler(404)
