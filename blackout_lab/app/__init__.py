@@ -10,6 +10,9 @@ def create_app(allow_cmd_exec: bool = True):
     app.config['SECRET_KEY'] = 'blackout-secret-key'
     app.config['ALLOW_CMD_EXEC'] = allow_cmd_exec
     
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+    
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
