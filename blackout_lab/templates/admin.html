@@ -147,7 +147,17 @@
 
                     <!-- Users Tab -->
                     <div class="tab-pane fade" id="users" role="tabpanel">
-                        <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-people me-2"></i> 카페 회원 및 권한 관리</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-people me-2"></i> 카페 회원 및 권한 관리</h5>
+                            <!-- 사용자 검색바 -->
+                            <form action="/admin#users" method="GET" class="d-flex gap-2">
+                                <input type="text" name="q_user" class="form-control form-control-sm" placeholder="ID 또는 이메일 검색" value="{{ q_user or '' }}">
+                                <button type="submit" class="btn btn-sm btn-danger px-3 shadow-sm">검색</button>
+                                {% if q_user %}
+                                <a href="/admin#users" class="btn btn-sm btn-outline-secondary px-3 shadow-sm">초기화</a>
+                                {% endif %}
+                            </form>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle">
                                 <thead class="table-light">
@@ -174,7 +184,7 @@
                                                 </select>
                                             </form>
                                         </td>
-                                        <td class="text-secondary small">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '' }}</td>
+                                        <td class="text-secondary small">{{ (u.created_at | string)[:10] if u.created_at else '' }}</td>
                                         <td>
                                             {% if u.id != session.get('user_id') %}
                                             <form action="/admin/user/{{ u.id }}/delete" method="POST" onsubmit="return confirm('정말 {{ u.username }} 회원을 강제 탈퇴시키겠습니까? 게시글도 함께 삭제됩니다.');">
@@ -220,7 +230,7 @@
                                             <span class="badge bg-primary">자유</span>
                                             {% endif %}
                                         </td>
-                                        <td class="text-secondary small">{{ p.created_at.strftime('%Y-%m-%d') if p.created_at else '' }}</td>
+                                        <td class="text-secondary small">{{ (p.created_at | string)[:10] if p.created_at else '' }}</td>
                                         <td>{{ p.views }}</td>
                                         <td>
                                             <form action="/admin/post/{{ p.id }}/delete" method="POST" onsubmit="return confirm('진짜 삭제하시겠습니까?');">
@@ -269,8 +279,20 @@
 
                     <!-- IPs Tab -->
                     <div class="tab-pane fade" id="ips" role="tabpanel">
-                        <h5 class="fw-bold mb-4 text-danger"><i class="bi bi-pc-display me-2"></i> 사용자 로그인 기록 및 IP 보안 모니터링</h5>
-                        <p class="text-secondary small mb-4">로그인 시도 및 가입 시 저장된 접속 IP를 추적합니다.</p>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="fw-bold mb-0 text-danger"><i class="bi bi-pc-display me-2"></i> 사용자 로그인 기록 및 IP 보안 모니터링</h5>
+                                <p class="text-secondary small mb-0">로그인 시도 및 가입 시 저장된 접속 IP를 추적합니다.</p>
+                            </div>
+                            <!-- 로그 검색바 -->
+                            <form action="/admin#ips" method="GET" class="d-flex gap-2">
+                                <input type="text" name="q_log" class="form-control form-control-sm" placeholder="사용자명 또는 IP 검색" value="{{ q_log or '' }}">
+                                <button type="submit" class="btn btn-sm btn-danger px-3 shadow-sm">검색</button>
+                                {% if q_log %}
+                                <a href="/admin#ips" class="btn btn-sm btn-outline-secondary px-3 shadow-sm">초기화</a>
+                                {% endif %}
+                            </form>
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle text-center">
                                 <thead class="table-light">

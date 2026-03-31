@@ -28,10 +28,24 @@ def admin():
         return (f"<h3>접근 거부: 관리자 권한(role=admin)이 필요합니다.</h3>"
                 f"<p>현재 권한: {request.cookies.get('role','user')}</p>"
                 f"<p><a href='/'>돌아가기</a></p>")
+
+    q_user = request.args.get('q_user', '').strip()
+    q_log  = request.args.get('q_log', '').strip()
+
     conn = get_db_connection()
     cur  = conn.cursor()
-    cur.execute("SELECT id, username, email, role, created_at FROM users ORDER BY id")
+
+    # User list with search
+    if q_user:
+        cur.execute(
+            "SELECT id, username, email, role, created_at FROM users "
+            "WHERE username LIKE %s OR email LIKE %s ORDER BY id",
+            (f'%{q_user}%', f'%{q_user}%')
+        )
+    else:
+        cur.execute("SELECT id, username, email, role, created_at FROM users ORDER BY id")
     users = cur.fetchall()
+
     cur.execute("SELECT p.*, u.email FROM posts p LEFT JOIN users u ON p.author_id=u.id ORDER BY p.created_at DESC")
     posts = cur.fetchall()
     cur.execute("SELECT * FROM notices ORDER BY created_at DESC")
@@ -65,12 +79,22 @@ def admin():
     for row in role_rows:
         role_stats[row['role']] = row['cnt']
 
-    cur.execute("SELECT * FROM login_logs ORDER BY created_at DESC LIMIT 100")
+    # Login logs with search
+    if q_log:
+        cur.execute(
+            "SELECT * FROM login_logs WHERE username LIKE %s OR ip_address LIKE %s "
+            "ORDER BY created_at DESC LIMIT 100",
+            (f'%{q_log}%', f'%{q_log}%')
+        )
+    else:
+        cur.execute("SELECT * FROM login_logs ORDER BY created_at DESC LIMIT 100")
     logs = cur.fetchall()
+
     cur.close(); conn.close()
     return render_template('admin.html', users=users, posts=posts, notices=notices,
                            stats=stats, logs=logs,
-                           oauth_stats=oauth_stats, role_stats=role_stats)
+                           oauth_stats=oauth_stats, role_stats=role_stats,
+                           q_user=q_user, q_log=q_log)
 
 
 # ── User Management ───────────────────────────────────────────

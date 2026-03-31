@@ -6,10 +6,13 @@
         <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-5">
             <div class="card-header bg-dark text-white p-4 p-md-5 pb-4">
                 <div class="d-flex justify-content-between align-items-start mb-4">
-                    <span class="badge bg-info text-dark px-3 py-2 rounded-pill fw-bold"><i class="bi bi-chat-left-text-fill me-1"></i> 자유 게시판</span>
+                    <span class="badge {% if is_notice %}bg-danger{% else %}bg-info text-dark{% endif %} px-3 py-2 rounded-pill fw-bold">
+                        <i class="bi {% if is_notice %}bi-megaphone-fill{% else %}bi-chat-left-text-fill{% endif %} me-1"></i> 
+                        {% if is_notice %}공지사항{% else %}자유 게시판{% endif %}
+                    </span>
                     <div class="text-secondary small">
                         <i class="bi bi-eye me-1"></i> 조회수 {{ post.views }} &nbsp;|&nbsp;
-                        <i class="bi bi-clock me-1"></i> {{ post.created_at[:16] }}
+                        <i class="bi bi-clock me-1"></i> {{ (post.created_at | string)[:16] if post.created_at else '' }}
                     </div>
                 </div>
                 <!-- [VULNERABILITY] Stored XSS -->
@@ -17,7 +20,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center">
                         <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold me-3 shadow-sm" style="width: 45px; height: 45px; font-size: 1.2rem;">
-                            {{ post.author[0] | upper }}
+                            {{ (post.author | default('?'))[0] | upper }}
                         </div>
                         <div>
                             <div class="fw-bold fs-5">
@@ -29,10 +32,14 @@
                     {% set current_role = request.cookies.get('role') or session.get('role') %}
                     {% if session.get('user_id') == post.author_id or current_role == 'admin' %}
                     <div>
+                        {% if not is_notice %}
                         <a href="/post/{{ post.id }}/edit" class="btn btn-sm btn-outline-warning rounded-pill px-3 me-2"><i class="bi bi-pencil"></i> 수정</a>
                         <form action="/post/{{ post.id }}/delete" method="POST" class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?');">
                             <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3"><i class="bi bi-trash"></i> 삭제</button>
                         </form>
+                        {% else %}
+                        <span class="badge bg-dark">관리자 전용</span>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -44,12 +51,14 @@
                 <textarea id="raw-markdown" style="display:none;">{{ post.content }}</textarea>
                 <div id="markdown-render" class="markdown-body"></div>
                 
+                {% if not is_notice %}
                 <div class="text-center mt-5 pt-4 border-top">
                     <button id="like-btn" class="btn {% if user_liked %}btn-primary{% else %}btn-outline-primary{% endif %} btn-lg rounded-pill px-4 shadow-sm" onclick="toggleLike({{ post.id }})">
                         <i class="bi {% if user_liked %}bi-hand-thumbs-up-fill{% else %}bi-hand-thumbs-up{% endif %} me-2"></i>
                         <span id="like-count" class="fw-bold">{{ likes }}</span>
                     </button>
                 </div>
+                {% endif %}
             </div>
             
             {% if files %}
@@ -69,6 +78,7 @@
             {% endif %}
             
             <!-- Comments Section -->
+            {% if not is_notice %}
             <div class="card-body bg-light border-top p-4 p-md-5" id="comments">
                 <h5 class="fw-bold mb-4"><i class="bi bi-chat-dots-fill text-primary me-2"></i> 댓글 <span class="text-primary">{{ comments|length }}</span></h5>
                 
@@ -96,7 +106,7 @@
                                 <i class="bi bi-person-circle text-secondary me-2"></i>
                                 <a href="/profile?user_id={{ c.author_id }}" class="text-decoration-none text-dark">{{ c.author }}</a>
                             </div>
-                            <div class="text-muted small">{{ c.created_at[:16] }}</div>
+                            <div class="text-muted small">{{ (c.created_at | string)[:16] if c.created_at else '' }}</div>
                         </div>
                         <div class="comment-content text-body fs-6 mb-3">
                             <!-- [VULNERABILITY] Stored XSS -->
@@ -143,7 +153,7 @@
                                     <a href="/profile?user_id={{ reply.author_id }}" class="text-decoration-none text-dark">{{ reply.author }}</a> 
                                     <span class="badge bg-secondary ms-1" style="font-size:0.65rem">작성자</span>
                                 </div>
-                                <div class="text-muted small" style="font-size:0.8rem">{{ reply.created_at[:16] }}</div>
+                                <div class="text-muted small" style="font-size:0.8rem">{{ (reply.created_at | string)[:16] if reply.created_at else '' }}</div>
                             </div>
                             <div class="comment-content text-body fs-6 mb-2">
                                 {{ reply.content | safe }}
@@ -165,6 +175,7 @@
                     {% endfor %}
                 </div>
             </div>
+            {% endif %}
 
             <div class="card-footer bg-dark border-0 d-flex justify-content-between p-4 px-md-5">
                 <a href="/" class="btn btn-outline-light px-4 rounded-pill fw-bold"><i class="bi bi-list-ul me-1"></i> 목록으로</a>

@@ -111,7 +111,8 @@ def board_view(post_id):
     return render_template('board_view.html',
                            post=post, files=files,
                            likes=likes, user_liked=user_liked,
-                           comments=comments)
+                           comments=comments,
+                           is_notice=False)
 
 
 # ── View Notice ─────────────────────────────────────────────────
@@ -130,7 +131,11 @@ def notice_view(notice_id):
     files = cur.fetchall()
     conn.commit(); cur.close(); conn.close()
 
-    return render_template('board_view.html', post=post, files=files, is_notice=True)
+    # 공지사항은 좋아요나 댓글 기능이 없는 구조이므로 빈 값을 전달하여 템플릿 에러 방지
+    return render_template('board_view.html', 
+                           post=post, files=files, 
+                           likes=0, user_liked=False, comments=[],
+                           is_notice=True)
 
 
 # ── Edit Post ─────────────────────────────────────────────────

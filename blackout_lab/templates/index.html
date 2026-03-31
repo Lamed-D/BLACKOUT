@@ -28,6 +28,24 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- [공지사항 섹션] -->
+                    {% for notice in notices %}
+                    <tr class="table-warning border-warning border-opacity-25">
+                        <td class="text-danger fw-bold"><i class="bi bi-megaphone-fill"></i> 공지</td>
+                        <td class="text-start ps-4">
+                            <a href="/notice/{{ notice.id }}" class="text-decoration-none fw-bold fs-5 text-dark">
+                                {{ notice.title | safe }}
+                            </a>
+                            {% if notice.file_path %}
+                                <i class="bi bi-paperclip text-secondary fs-5 ms-2"></i>
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-danger px-3 py-2 rounded-pill">관리자</span></td>
+                        <td class="text-secondary small">{{ notice.created_at }}</td>
+                    </tr>
+                    {% endfor %}
+
+                    <!-- [일반 게시글 섹션] -->
                     {% for post in posts %}
                     <tr>
                         <td class="text-secondary fw-bold">{{ post.id }}</td>
@@ -44,9 +62,11 @@
                         <td class="text-secondary small">{{ post.created_at }}</td>
                     </tr>
                     {% else %}
+                    {% if not notices %}
                     <tr>
                         <td colspan="4" class="py-5 text-muted">등록된 게시글이 없습니다.</td>
                     </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
