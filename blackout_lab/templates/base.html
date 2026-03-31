@@ -34,14 +34,7 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto align-items-center gap-1">
-          {% set allow_cmd = config.get('ALLOW_CMD_EXEC', True) %}
-          <li class="nav-item me-1">
-            {% if allow_cmd %}
-            <span class="mode-badge mode-local">⚡ LOCAL MODE</span>
-            {% else %}
-            <span class="mode-badge mode-net">🔒 NETWORK MODE</span>
-            {% endif %}
-          </li>
+
           {% if session.session_id or session.get('user') %}
           <li class="nav-item">
             <span class="nav-link" style="font-size:.88rem;">
