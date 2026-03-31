@@ -174,7 +174,7 @@
                                                 </select>
                                             </form>
                                         </td>
-                                        <td class="text-secondary small">{{ u.created_at[:10] }}</td>
+                                        <td class="text-secondary small">{{ u.created_at.strftime('%Y-%m-%d') if u.created_at else '' }}</td>
                                         <td>
                                             {% if u.id != session.get('user_id') %}
                                             <form action="/admin/user/{{ u.id }}/delete" method="POST" onsubmit="return confirm('정말 {{ u.username }} 회원을 강제 탈퇴시키겠습니까? 게시글도 함께 삭제됩니다.');">
@@ -220,7 +220,7 @@
                                             <span class="badge bg-primary">자유</span>
                                             {% endif %}
                                         </td>
-                                        <td class="text-secondary small">{{ p.created_at[:10] }}</td>
+                                        <td class="text-secondary small">{{ p.created_at.strftime('%Y-%m-%d') if p.created_at else '' }}</td>
                                         <td>{{ p.views }}</td>
                                         <td>
                                             <form action="/admin/post/{{ p.id }}/delete" method="POST" onsubmit="return confirm('진짜 삭제하시겠습니까?');">
