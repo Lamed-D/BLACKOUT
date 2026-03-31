@@ -43,8 +43,11 @@ def create_app(allow_cmd_exec: bool = True):
     def not_found_error(error):
         return render_template('404.html'), 404
 
-    @app.errorhandler(500)
+    @app.errorhandler(Exception)
     def internal_error(error):
-        return render_template('500.html', error=error), 500
+        import traceback
+        error_tb = traceback.format_exc()
+        app.logger.error(f"500 Error: {error}\n{error_tb}")
+        return render_template('500.html', error=error, error_tb=error_tb), 500
         
     return app

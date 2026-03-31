@@ -8,14 +8,22 @@
             </div>
             <div class="card-body">
                 <p>The server encountered an unexpected condition.</p>
-                <div class="bg-black text-success p-3 font-monospace small rounded border border-success">
-                    <div class="text-warning mb-2">// Developer Stack Trace (Leaked intentionally)</div>
-                    <div>Exception in execution: {{ error }}</div>
-                    <div class="mt-2 text-secondary">Check your payload syntax (SQLi, XXE, Deserialization).</div>
-                </div>
-            </div>
-            <div class="card-footer text-center">
-                <a href="/" class="btn btn-sm btn-outline-danger">Return Home</a>
+                {% if error %}
+                    <div class="alert alert-danger mb-4">
+                        <i class="bi bi-x-octagon-fill me-2 fs-5"></i>
+                        <strong>오류 메시지:</strong> <br>{{ error }}
+                    </div>
+                {% endif %}
+
+                {% if error_tb %}
+                    <div class="alert alert-secondary text-start mb-4" style="max-height: 300px; overflow-y: auto;">
+                        <i class="bi bi-bug-fill me-2"></i><strong>상세 오류 내역 (Stack Trace)</strong>
+                        <hr>
+                        <pre class="small text-muted mb-0"><code>{{ error_tb }}</code></pre>
+                    </div>
+                {% endif %}
+                
+                <a href="{{ url_for('board.index') }}" class="btn btn-outline-primary btn-lg px-4 rounded-pill fw-bold shadow-sm">Return Home</a>
             </div>
         </div>
     </div>

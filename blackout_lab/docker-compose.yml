@@ -23,6 +23,8 @@ services:
       - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET:-}
       - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID:-}
       - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET:-}
+      - OAUTHLIB_INSECURE_TRANSPORT=1
+      - OAUTHLIB_RELAX_TOKEN_SCOPE=1
     volumes:
       - ./uploads:/blackout_lab/uploads   # 파일 업로드 데이터 유지
     depends_on:

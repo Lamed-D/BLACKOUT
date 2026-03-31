@@ -45,10 +45,11 @@ def google_callback():
         flash('Google 사용자 정보를 가져오지 못했습니다.', 'danger')
         return redirect(url_for('auth.login'))
     info = resp.json()
+    oauth_id = info.get('id') or info.get('sub')
     return _oauth_login_or_register(
         provider='google',
-        oauth_id=info['id'],
-        username=f"google_{info['id']}",
+        oauth_id=oauth_id,
+        username=f"google_{oauth_id}",
         name=info.get('name', ''),
         email=info.get('email', ''),
     )
