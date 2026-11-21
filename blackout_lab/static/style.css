@@ -31,6 +31,9 @@ body {
   background: var(--c-bg);
   color: var(--c-text);
   line-height: 1.65;
+  /* 우하단 고정 Telemetry 토글 버튼이 게시판 하단(페이지네이션/글쓰기)을
+     가리지 않도록 여백 확보. 콘솔을 열면 JS가 더 늘림. */
+  padding-bottom: 84px;
 }
 code, kbd, pre, .font-monospace, samp {
   font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
