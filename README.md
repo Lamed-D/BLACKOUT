@@ -9,7 +9,7 @@ BLACKOUT은 회원·게시판·관리자 기능을 갖춘 커뮤니티를 토대
 | 구분 | 설명 | 스택 | 위치 |
 | --- | --- | --- | --- |
 | **원본 랩** | 최초 구현. 커뮤니티 + 24종 취약점 + 실습실 | Flask · MariaDB · Apache | [`blackout_lab/`](blackout_lab/) |
-| **멀티엔진 랩** | 같은 UI를 백엔드 엔진별로 재현(비교 학습), 40종 취약점 | PHP · Node.js · Django · SQLite | [`labs/`](labs/) |
+| **멀티엔진 랩** | 같은 UI를 백엔드 엔진별로 재현(비교 학습), 40종 취약점 | PHP · Node.js · Django · MariaDB/PostgreSQL | [`labs/`](labs/) |
 
 ## 빠른 시작 (멀티엔진 랩 · 로컬 전용 권장)
 

@@ -9,9 +9,9 @@
 | 구성요소 | 스택 | 접속(로컬) | 상태 |
 | --- | --- | --- | --- |
 | 포털 | nginx 정적 | http://127.0.0.1:8090 | ✅ |
-| PHP 엔진 | PHP 8.4 + SQLite(PDO) | http://127.0.0.1:8101 | ✅ |
-| Node 엔진 | Express + EJS + SQLite | http://127.0.0.1:8102 | 🚧 준비중 |
-| Django 엔진 | Django 5 + SQLite | http://127.0.0.1:8103 | 🚧 준비중 |
+| PHP 엔진 | PHP 8.4 + MariaDB | http://127.0.0.1:8101 | ✅ |
+| Node 엔진 | Express + EJS + MariaDB | http://127.0.0.1:8102 | 🚧 준비중 |
+| Django 엔진 | Django 5 + PostgreSQL | http://127.0.0.1:8103 | 🚧 준비중 |
 
 ## 실행
 ```sh
@@ -30,7 +30,7 @@ docker compose -f labs/php/compose.yaml up -d --build      # PHP  :8101
 | testuser | testpass | user |
 | alice | alice1234 | user |
 
-DB는 SQLite이며, 각 엔진이 부팅 시 스키마+시드를 자동 생성합니다(멱등). 시드된 기본 DB도 저장소에 포함됩니다.
+각 엔진은 상용 DB(MariaDB 등)를 컨테이너로 함께 기동하며(호스트 미노출), 부팅 시 스키마+시드를 자동 생성합니다(멱등).
 
 ## 공유 자산 (`theme/`)
 - `theme/style.css` — 모든 엔진 공통 테마(blackout 계승)

@@ -34,9 +34,6 @@ docker-compose.override.yml
 *.db
 *.sqlite3
 mariadb_data/
-# labs 시드 DB는 커밋 포함(클론 즉시 구동용)
-!labs/**/seed/
-!labs/**/seed/*.db
 
 # 📦 Node
 node_modules/

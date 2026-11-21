@@ -1,96 +1,116 @@
 <?php
 // ============================================================
-// BLACKOUT PHP 엔진 — 공통 부트스트랩 (DB/시드/헬퍼/레이아웃)
+// BLACKOUT PHP 엔진 — 공통 부트스트랩 (상용 DB=MariaDB / 시드 / 헬퍼 / 레이아웃)
 //  ⚠️ 의도적으로 취약한 학습용 코드. 로컬에서만 구동할 것.
 // ============================================================
 session_start();
 
-// ── SQLite 연결 (없으면 자동 생성 + 시드) ──────────────────
+// ── MariaDB(PDO) 연결 — 준비될 때까지 재시도, 없으면 스키마+시드 생성 ──
 function db(): PDO {
     static $pdo = null;
     if ($pdo !== null) return $pdo;
 
-    $dir = getenv('DB_DIR') ?: '/var/www/db';
-    @mkdir($dir, 0777, true);
-    $path = $dir . '/blackout.db';
+    $host = getenv('DB_HOST') ?: 'db';
+    $port = getenv('DB_PORT') ?: '3306';
+    $name = getenv('DB_NAME') ?: 'blackout';
+    $user = getenv('DB_USER') ?: 'blackout';
+    $pass = getenv('DB_PASSWORD') ?: 'blackout_pass';
+    $dsn  = "mysql:host=$host;port=$port;dbname=$name;charset=utf8mb4";
 
-    // 커밋된 시드 DB가 있으면 최초 1회 복사 (git 포함 기본 DB)
-    $seed = __DIR__ . '/seed/blackout.db';
-    if (!file_exists($path) && file_exists($seed)) {
-        @copy($seed, $path);
+    $last = null;
+    for ($i = 0; $i < 60; $i++) {
+        try {
+            $pdo = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ]);
+            break;
+        } catch (Throwable $e) { $last = $e; usleep(500000); }
     }
+    if ($pdo === null) throw new RuntimeException('DB 연결 실패: ' . ($last ? $last->getMessage() : ''));
 
-    $pdo = new PDO('sqlite:' . $path);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->exec('PRAGMA foreign_keys = ON');
     init_db($pdo);
     return $pdo;
 }
 
-// ── 스키마 생성 + 시드 (멱등) ───────────────────────────────
+// ── 스키마 생성 + 시드 (멱등, 워커 간 GET_LOCK 으로 직렬화) ──────
 function init_db(PDO $pdo): void {
-    $has = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")->fetch();
-    if ($has) return;
+    $pdo->query("SELECT GET_LOCK('blackout_init', 15)");
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(80) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL DEFAULT '', name VARCHAR(80) NOT NULL DEFAULT '',
+            email VARCHAR(120), role VARCHAR(20) DEFAULT 'user', bio TEXT,
+            points INT DEFAULT 1000, last_ip VARCHAR(50) DEFAULT '',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS posts (
+            id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, content TEXT NOT NULL,
+            author_id INT NOT NULL, author VARCHAR(80) NOT NULL, views INT DEFAULT 0, likes INT DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS comments (
+            id INT AUTO_INCREMENT PRIMARY KEY, post_id INT NOT NULL, author_id INT NOT NULL,
+            author VARCHAR(80) NOT NULL, content TEXT NOT NULL, parent_id INT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS notices (
+            id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, content TEXT NOT NULL,
+            author_id INT NOT NULL, author VARCHAR(80) NOT NULL, views INT DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS files (
+            id INT AUTO_INCREMENT PRIMARY KEY, post_id INT, notice_id INT,
+            filename VARCHAR(255) NOT NULL, orig_name VARCHAR(255) NOT NULL, size INT DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS login_logs (
+            id INT AUTO_INCREMENT PRIMARY KEY, user_id INT, username VARCHAR(80) NOT NULL,
+            ip_address VARCHAR(50) NOT NULL, user_agent TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS post_likes (
+            id INT AUTO_INCREMENT PRIMARY KEY, post_id INT NOT NULL, user_id INT NOT NULL,
+            UNIQUE KEY uq_post_user (post_id, user_id)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS products (
+            id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, description TEXT,
+            price INT NOT NULL, stock INT DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS orders (
+            id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, product_id INT NOT NULL,
+            quantity INT NOT NULL, unit_price INT NOT NULL, total INT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-    $pdo->exec("CREATE TABLE users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL, password TEXT NOT NULL DEFAULT '',
-        name TEXT NOT NULL DEFAULT '', email TEXT, role TEXT DEFAULT 'user',
-        bio TEXT DEFAULT '', points INTEGER DEFAULT 1000, last_ip TEXT DEFAULT '',
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-    $pdo->exec("CREATE TABLE posts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL,
-        author_id INTEGER NOT NULL, author TEXT NOT NULL, views INTEGER DEFAULT 0,
-        likes INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-    $pdo->exec("CREATE TABLE comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, author_id INTEGER NOT NULL,
-        author TEXT NOT NULL, content TEXT NOT NULL, parent_id INTEGER,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-    $pdo->exec("CREATE TABLE notices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, content TEXT NOT NULL,
-        author_id INTEGER NOT NULL, author TEXT NOT NULL, views INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-    $pdo->exec("CREATE TABLE files (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER, notice_id INTEGER,
-        filename TEXT NOT NULL, orig_name TEXT NOT NULL, size INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-    $pdo->exec("CREATE TABLE login_logs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, username TEXT NOT NULL,
-        ip_address TEXT NOT NULL, user_agent TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-    $pdo->exec("CREATE TABLE post_likes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, post_id INTEGER NOT NULL, user_id INTEGER NOT NULL,
-        UNIQUE(post_id, user_id))");
-    $pdo->exec("CREATE TABLE products (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, description TEXT,
-        price INTEGER NOT NULL, stock INTEGER DEFAULT 0, created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-    $pdo->exec("CREATE TABLE orders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, product_id INTEGER NOT NULL,
-        quantity INTEGER NOT NULL, unit_price INTEGER NOT NULL, total INTEGER NOT NULL,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+        if ((int)$pdo->query("SELECT COUNT(*) c FROM users")->fetch()['c'] === 0) {
+            // 비밀번호는 솔트 없는 MD5 — 의도적 취약
+            $u = $pdo->prepare("INSERT INTO users (username,password,name,email,role,bio,points,last_ip) VALUES (?,?,?,?,?,?,?,?)");
+            $u->execute(['admin',    md5('admin123'),  '관리자', 'admin@blackout.lab', 'admin', '', 999999, '127.0.0.1']);
+            $u->execute(['testuser', md5('testpass'),  '테스터', 'test@blackout.lab',  'user',  '', 1000,   '192.168.1.105']);
+            $u->execute(['alice',    md5('alice1234'), '앨리스', 'alice@blackout.lab', 'user',  '', 1500,   '10.0.2.14']);
 
-    // ── 시드 (비밀번호는 솔트 없는 MD5 — 의도적 취약) ──
-    $u = $pdo->prepare("INSERT INTO users (username,password,name,email,role,points,last_ip) VALUES (?,?,?,?,?,?,?)");
-    $u->execute(['admin',    md5('admin123'),  '관리자', 'admin@blackout.lab', 'admin', 999999, '127.0.0.1']);
-    $u->execute(['testuser', md5('testpass'),  '테스터', 'test@blackout.lab',  'user',  1000,   '192.168.1.105']);
-    $u->execute(['alice',    md5('alice1234'), '앨리스', 'alice@blackout.lab', 'user',  1500,   '10.0.2.14']);
+            $pdo->prepare("INSERT INTO notices (title,content,author_id,author) VALUES (?,?,?,?)")
+                ->execute(['[공지] BLACKOUT 실습 카페 이용 안내',
+                           "본 카페는 의도적으로 취약하게 제작된 모의해킹 실습 환경입니다.\n학습 목적 외 사용을 금합니다.", 1, 'admin']);
 
-    $pdo->prepare("INSERT INTO notices (title,content,author_id,author) VALUES (?,?,?,?)")
-        ->execute(['[공지] BLACKOUT 실습 카페 이용 안내',
-                   "본 카페는 의도적으로 취약하게 제작된 모의해킹 실습 환경입니다.\n학습 목적 외 사용을 금합니다.", 1, 'admin']);
+            $p = $pdo->prepare("INSERT INTO posts (title,content,author_id,author) VALUES (?,?,?,?)");
+            $p->execute(['가입 인사 드립니다!', '반갑습니다. 웹 보안 스터디를 위해 가입했습니다 😊', 2, 'testuser']);
+            $p->execute(['SQL Injection 학습 자료 공유', 'PortSwigger Academy의 SQL Injection 트랙을 추천합니다!', 3, 'alice']);
+            // 페이지네이션 체감용 샘플 글 다수
+            $samples = ['환경 세팅 질문', 'XSS 필터 우회 팁', '파일 업로드 취약점 정리', 'JWT 디버깅 노트',
+                        'SSRF 사례 공유', '관리자 페이지 접근 실습', '명령 주입 체크리스트', '역직렬화 입문',
+                        'CORS 오설정 확인법', '비밀번호 재설정 흐름', 'IDOR 찾는 법', '세션 관리 베스트프랙티스'];
+            foreach ($samples as $i => $t) {
+                $p->execute([$t, '실습 메모 #' . ($i + 1) . ' — 자유롭게 토론해요.', ($i % 2) ? 3 : 2, ($i % 2) ? 'alice' : 'testuser']);
+            }
 
-    $p = $pdo->prepare("INSERT INTO posts (title,content,author_id,author) VALUES (?,?,?,?)");
-    $p->execute(['가입 인사 드립니다!', '반갑습니다. 웹 보안 스터디를 위해 가입했습니다 😊', 2, 'testuser']);
-    $p->execute(['SQL Injection 학습 자료 공유', 'PortSwigger Academy의 SQL Injection 트랙을 추천합니다!', 3, 'alice']);
+            $c = $pdo->prepare("INSERT INTO comments (post_id,author_id,author,content) VALUES (?,?,?,?)");
+            $c->execute([1, 3, 'alice', '환영합니다! 함께 공부해요 :)']);
+            $c->execute([1, 1, 'admin', '잘 오셨습니다! 실습 랩을 마음껏 활용해 보세요.']);
 
-    $c = $pdo->prepare("INSERT INTO comments (post_id,author_id,author,content) VALUES (?,?,?,?)");
-    $c->execute([1, 3, 'alice', '환영합니다! 함께 공부해요 :)']);
-    $c->execute([1, 1, 'admin', '잘 오셨습니다! 실습 랩을 마음껏 활용해 보세요.']);
-
-    $pr = $pdo->prepare("INSERT INTO products (name,description,price,stock) VALUES (?,?,?,?)");
-    $pr->execute(['실습 포인트 충전권', '포인트 1000 충전 쿠폰', 1000, 100]);
-    $pr->execute(['BLACKOUT 후드티', '한정판 보안 스터디 굿즈', 35000, 20]);
-    $pr->execute(['프리미엄 멘토링 1회', '1:1 웹해킹 멘토링', 200000, 5]);
+            $pr = $pdo->prepare("INSERT INTO products (name,description,price,stock) VALUES (?,?,?,?)");
+            $pr->execute(['실습 포인트 충전권', '포인트 1000 충전 쿠폰', 1000, 100]);
+            $pr->execute(['BLACKOUT 후드티', '한정판 보안 스터디 굿즈', 35000, 20]);
+            $pr->execute(['프리미엄 멘토링 1회', '1:1 웹해킹 멘토링', 200000, 5]);
+        }
+    } finally {
+        $pdo->query("SELECT RELEASE_LOCK('blackout_init')");
+    }
 }
 
 // ── 헬퍼 ────────────────────────────────────────────────────

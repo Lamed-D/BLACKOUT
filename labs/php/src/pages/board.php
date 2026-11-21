@@ -16,7 +16,7 @@ function page_home(): void {
         catch (Throwable $e) { $err = $e->getMessage() . "\n쿼리: " . $sql; } // [VULN] verbose 오류
     }
     // 페이지네이션 (최신글 우선)
-    $per = 8;
+    $per = 6;
     $total = (int)$pdo->query("SELECT COUNT(*) c FROM posts")->fetch()['c'];
     $pages = max(1, (int)ceil($total / $per));
     $page = max(1, min($pages, (int)($_GET['page'] ?? 1)));
@@ -64,14 +64,20 @@ function page_home(): void {
     }
     if (!$posts && !$notices) echo '<tr><td colspan="5" class="py-5 text-muted">등록된 게시글이 없습니다.</td></tr>';
     echo '</tbody></table></div>';
-    // 번호형 페이지네이션
+    // 번호형 페이지네이션 (1 2 3 … N, 현재 주변 윈도우 + 양끝 + 말줄임)
     if ($pages > 1) {
-        echo '<div class="card-footer d-flex justify-content-center"><nav><ul class="pagination mb-0">';
-        $prev = max(1, $page - 1); $next = min($pages, $page + 1);
-        echo '<li class="page-item' . ($page <= 1 ? ' disabled' : '') . '"><a class="page-link" href="/?page=' . $prev . '">&laquo;</a></li>';
+        $win = [];
         for ($i = 1; $i <= $pages; $i++)
+            if ($i === 1 || $i === $pages || abs($i - $page) <= 2) $win[] = $i;
+        echo '<div class="card-footer d-flex justify-content-center"><nav aria-label="게시판 페이지"><ul class="pagination flex-wrap justify-content-center gap-1 mb-0">';
+        echo '<li class="page-item' . ($page <= 1 ? ' disabled' : '') . '"><a class="page-link" href="/?page=' . max(1, $page - 1) . '">&laquo;</a></li>';
+        $last = 0;
+        foreach ($win as $i) {
+            if ($i - $last > 1) echo '<li class="page-item disabled"><span class="page-link">…</span></li>';
             echo '<li class="page-item' . ($i === $page ? ' active' : '') . '"><a class="page-link" href="/?page=' . $i . '">' . $i . '</a></li>';
-        echo '<li class="page-item' . ($page >= $pages ? ' disabled' : '') . '"><a class="page-link" href="/?page=' . $next . '">&raquo;</a></li>';
+            $last = $i;
+        }
+        echo '<li class="page-item' . ($page >= $pages ? ' disabled' : '') . '"><a class="page-link" href="/?page=' . min($pages, $page + 1) . '">&raquo;</a></li>';
         echo '</ul></nav></div>';
     }
     echo '<div class="card-footer text-end"><a class="btn btn-warning fw-bold text-dark" href="/post/write"><i class="bi bi-pencil-fill"></i> 글쓰기</a></div></div>';

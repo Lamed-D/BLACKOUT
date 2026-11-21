@@ -1,6 +1,6 @@
 name: blackout_labs
 # 로컬 전용 통합 기동. cloudflared/터널 없음(추후 사용자가 직접 추가).
-# 엔진이 추가되면 services 에 node(:8102)/django(:8103) 를 더한다.
+# 엔진이 추가되면 services 에 node(:8102)/django(:8103) 와 각 DB 를 더한다.
 services:
   portal:
     build:
@@ -14,6 +14,28 @@ services:
     build:
       context: .
       dockerfile: php/Dockerfile
+    environment:
+      DB_HOST: php-db
+      DB_NAME: blackout
+      DB_USER: blackout
+      DB_PASSWORD: blackout_pass
+    depends_on:
+      php-db:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8101:80"
+    restart: unless-stopped
+
+  php-db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: blackout
+      MARIADB_USER: blackout
+      MARIADB_PASSWORD: blackout_pass
+      MARIADB_ROOT_PASSWORD: root_pass
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
     restart: unless-stopped
