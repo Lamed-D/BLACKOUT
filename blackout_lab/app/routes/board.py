@@ -17,31 +17,31 @@ def index():
     search  = request.args.get('q', '').strip()
     per     = 10
 
+    where = ''
+    params = ()
     if search:
-        # [VULNERABILITY] Stored XSS — search term reflected without escaping in index.html
-        cur.execute("SELECT COUNT(*) as cnt FROM posts WHERE (title LIKE %s OR content LIKE %s)",
-                    (f'%{search}%', f'%{search}%'))
-        total = cur.fetchone()['cnt']
-        cur.execute(
-            "SELECT * FROM posts WHERE (title LIKE %s OR content LIKE %s) "
-            "ORDER BY created_at DESC LIMIT %s OFFSET %s",
-            (f'%{search}%', f'%{search}%', per, (page-1)*per))
-        posts = cur.fetchall()
-    else:
-        cur.execute("SELECT COUNT(*) as cnt FROM posts")
-        total = cur.fetchone()['cnt']
-        cur.execute(
-            "SELECT * FROM posts ORDER BY created_at DESC LIMIT %s OFFSET %s",
-            (per, (page-1)*per))
-        posts = cur.fetchall()
+        where = ' WHERE (title LIKE %s OR content LIKE %s)'
+        params = (f'%{search}%', f'%{search}%')
+
+    cur.execute('SELECT COUNT(*) AS cnt FROM posts' + where, params)
+    total = cur.fetchone()['cnt']
+    total_pages = max(1, (total + per - 1) // per)
+    page = min(page, total_pages)
+    nearby = range(max(1, page - 2), min(total_pages, page + 2) + 1)
+    page_numbers = sorted({1, *nearby, total_pages})
+    cur.execute('SELECT * FROM posts' + where +
+                ' ORDER BY created_at DESC, id DESC LIMIT %s OFFSET %s',
+                params + (per, (page - 1) * per))
+    posts = cur.fetchall()
     cur.close(); conn.close()
 
-    total_pages = max(1, (total + per - 1) // per)
     resp = make_response(render_template('index.html',
                                          posts=posts,
                                          notices=notices,
                                          page=page,
                                          total_pages=total_pages,
+                                         page_numbers=page_numbers,
+                                         total=total,
                                          search=search))
     if 'role' not in request.cookies:
         resp.set_cookie('role', 'user')

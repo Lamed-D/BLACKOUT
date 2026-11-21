@@ -16,6 +16,17 @@
 </div>
 
 <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <form action="{{ url_for('board.index') }}" method="get" role="search" class="d-flex gap-2 p-3">
+        <input type="search" name="q" value="{{ search }}" aria-label="제목 또는 내용 검색"
+               placeholder="제목 또는 내용 검색" class="form-control">
+        <button type="submit" class="btn btn-primary text-nowrap">검색</button>
+        {% if search %}
+        <a href="{{ url_for('board.index') }}" class="btn btn-outline-secondary text-nowrap">초기화</a>
+        {% endif %}
+    </form>
+    {% if search %}
+    <p class="px-3 mb-2">검색 결과 {{ total }}건</p>
+    {% endif %}
     <div class="card-body p-0">
         <div class="table-responsive">
             <table class="table table-hover table-striped mb-0 text-center align-middle">
@@ -33,7 +44,7 @@
                     <tr class="table-warning border-warning border-opacity-25">
                         <td class="text-danger fw-bold"><i class="bi bi-megaphone-fill"></i> 공지</td>
                         <td class="text-start ps-4">
-                            <a href="/notice/{{ notice.id }}" class="text-decoration-none fw-bold fs-5 text-dark">
+                            <a href="{{ url_for('board.notice_view', notice_id=notice.id, q=search or none, page=page) }}" class="text-decoration-none fw-bold fs-5 text-dark">
                                 {{ notice.title | safe }}
                             </a>
                             {% if notice.file_path %}
@@ -50,7 +61,7 @@
                     <tr>
                         <td class="text-secondary fw-bold">{{ post.id }}</td>
                         <td class="text-start ps-4">
-                            <a href="/post/{{ post.id }}" class="text-decoration-none fw-bold fs-5 text-info">
+                            <a href="{{ url_for('board.board_view', post_id=post.id, q=search or none, page=page) }}" class="text-decoration-none fw-bold fs-5 text-info">
                                 <!-- [VULNERABILITY] Stored XSS -->
                                 {{ post.title | safe }}
                             </a>
@@ -62,16 +73,30 @@
                         <td class="text-secondary small">{{ post.created_at }}</td>
                     </tr>
                     {% else %}
-                    {% if not notices %}
                     <tr>
-                        <td colspan="4" class="py-5 text-muted">등록된 게시글이 없습니다.</td>
+                        <td colspan="4" class="py-5 text-muted">{{ '검색 결과가 없습니다.' if search else '등록된 일반 게시글이 없습니다.' }}</td>
                     </tr>
-                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+    {% if total_pages > 1 %}
+    <nav aria-label="게시판 페이지" class="px-3 py-2">
+        <ul class="pagination flex-wrap justify-content-center gap-1 mb-0">
+            {% for number in page_numbers %}
+            {% if not loop.first and number > loop.previtem + 1 %}
+            <li class="page-item disabled" aria-hidden="true"><span class="page-link">…</span></li>
+            {% endif %}
+            {% if number == page %}
+            <li class="page-item active"><span class="page-link" aria-current="page">{{ number }}</span></li>
+            {% else %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('board.index', page=number, q=search or none) }}">{{ number }}</a></li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+    </nav>
+    {% endif %}
     <div class="card-footer bg-body-tertiary d-flex justify-content-end py-3 px-4">
         <a href="/post/write" class="btn btn-warning fw-bold px-4 rounded-pill shadow-sm text-dark"><i class="bi bi-pencil-fill me-1"></i> 글쓰기</a>
     </div>
