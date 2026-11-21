@@ -9,10 +9,12 @@ function page_login(): void {
         $username = $_POST['username'] ?? ''; $password = $_POST['password'] ?? '';
         // [VULN] SQL Injection — username/password 미파라미터화
         $query = "SELECT * FROM users WHERE username='$username' AND password='" . md5($password) . "'";
+        $user = null;
         try {
             $user = db()->query($query)->fetch(PDO::FETCH_ASSOC);
         } catch (Throwable $e) {
-            layout_header('로그인'); echo '<pre class="text-danger">DB 오류: ' . h($e->getMessage()) . "\n쿼리: " . h($query) . '</pre>'; layout_footer(); return;
+            // 로그인 화면은 쿼리/오류를 노출하지 않음(앱은 평범하게 동작). SQLi 취약점은 그대로 존재.
+            $error = '로그인 처리 중 오류가 발생했습니다.';
         }
         if ($user) {
             $_SESSION['user_id'] = $user['id']; $_SESSION['user'] = $user['username']; $_SESSION['role'] = $user['role'];
@@ -26,12 +28,11 @@ function page_login(): void {
             $next = $_GET['next'] ?? ($_POST['next'] ?? '/');
             redirect($next);
         }
-        $error = '아이디 또는 비밀번호가 틀렸습니다.';
+        if (!$error) $error = '아이디 또는 비밀번호가 틀렸습니다.';
     }
     layout_header('로그인');
     echo '<div class="card mx-auto" style="max-width:420px;"><div class="card-body p-4"><h4 class="fw-bold mb-3">로그인</h4>';
     if ($error) echo '<div class="alert alert-danger">' . h($error) . '</div>';
-    if ($query) echo '<pre class="small">실행 쿼리: ' . h($query) . '</pre>'; // [VULN] 쿼리 노출
     echo '<form method="post" action="/login"><input type="hidden" name="next" value="' . h($_GET['next'] ?? '/') . '"><input class="form-control mb-2" name="username" placeholder="아이디">';
     echo '<input class="form-control mb-3" type="password" name="password" placeholder="비밀번호">';
     echo '<button class="btn btn-primary w-100">로그인</button></form>';

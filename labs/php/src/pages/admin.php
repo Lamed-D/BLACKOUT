@@ -84,8 +84,8 @@ function page_admin_export(): void {
     header('Content-Type: text/csv; charset=utf-8');
     header('Content-Disposition: attachment; filename="users.csv"');
     $out = fopen('php://output', 'w');
-    fputcsv($out, ['id', 'username', 'email', 'role', 'points']);
-    // [VULN] CSV/수식 인젝션 — =,+,-,@ 로 시작하는 값을 그대로 기록
-    foreach ($rows as $r) fputcsv($out, [$r['id'], $r['username'], $r['email'], $r['role'], $r['points']]);
+    fputcsv($out, ['id', 'username', 'email', 'role', 'points'], ',', '"', '');
+    // [VULN] CSV/수식 인젝션 — =,+,-,@ 로 시작하는 값을 그대로(이스케이프 없이) 기록
+    foreach ($rows as $r) fputcsv($out, [$r['id'], $r['username'], $r['email'], $r['role'], $r['points']], ',', '"', '');
     fclose($out); exit;
 }
