@@ -2,10 +2,10 @@ name: blackout_labs
 # 로컬 전용 통합 기동. cloudflared/터널 없음(추후 사용자가 직접 추가).
 # 엔진이 추가되면 services 에 node(:8102)/django(:8103) 와 각 DB 를 더한다.
 services:
-  portal:
+  nginx:
     build:
       context: .
-      dockerfile: portal/Dockerfile
+      dockerfile: nginx/Dockerfile
     ports:
       - "127.0.0.1:8090:80"
     restart: unless-stopped

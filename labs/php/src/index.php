@@ -11,11 +11,15 @@ require_once __DIR__ . '/pages/admin.php';
 require_once __DIR__ . '/pages/shop.php';
 require_once __DIR__ . '/pages/practice.php';
 require_once __DIR__ . '/pages/api.php';
+require_once __DIR__ . '/pages/phpvuln.php';
 
 db(); // 최초 요청 시 스키마/시드 보장
 
 $path = rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 if ($path === '') $path = '/';
+
+// PHP 전용 취약점 API (제너릭 /api 디스패치보다 먼저)
+if ($path === '/api/call') { page_dynamic_call(); exit; }
 
 // /api/<action>
 if (preg_match('#^/api/([a-z_]+)$#', $path, $m)) { api_dispatch($m[1]); exit; }
@@ -46,6 +50,11 @@ switch (true) {
     case $path === '/utils/url_preview':page_url_preview(); break;
     case $path === '/xss':              page_xss(); break;
     case $path === '/theme':            page_theme(); break;
+
+    // PHP 전용 취약점
+    case $path === '/verify_token':     page_verify_token(); break;
+    case $path === '/settings':         page_settings_extract(); break;
+    case $path === '/phpinfo':          page_phpinfo(); break;
 
     case $path === '/shop':             page_shop(); break;
     case $path === '/shop/buy':         page_shop_buy(); break;

@@ -7,7 +7,13 @@ function page_practice(): void {
     layout_header('모의해킹 실습실');
     if (!$data) { echo '<p>vulns.json 을 불러오지 못했습니다.</p>'; layout_footer(); return; }
 
-    $cats = $data['categories']; $vulns = $data['vulns'];
+    $ENGINE = 'php';
+    $cats = $data['categories'];
+    // 엔진 필터: 공통(all/미지정) + 이 엔진 전용만 표시
+    $vulns = array_values(array_filter($data['vulns'], function ($v) use ($ENGINE) {
+        $e = $v['engine'] ?? 'all';
+        return $e === 'all' || $e === $ENGINE;
+    }));
     echo '<div class="card section-sqli mb-4"><div class="card-header"><h3 class="fw-bold mb-0" style="color:var(--c-blue)"><i class="bi bi-shield-shaded"></i> ' . h($data['meta']['title']) . '</h3>';
     echo '<small class="text-muted">' . h($data['meta']['note']) . '</small></div>';
     echo '<div class="card-body p-4">';
@@ -24,7 +30,10 @@ function page_practice(): void {
         $dmap = ['easy' => 'diff-easy', 'medium' => 'diff-medium', 'hard' => 'diff-hard', 'expert' => 'diff-expert'];
         echo '<div class="accordion-item vuln-row" data-cat="' . h($v['category']) . '">';
         echo '<h2 class="accordion-header"><button class="accordion-button collapsed" data-vuln="' . h($v['category']) . '" type="button" data-bs-toggle="collapse" data-bs-target="#v' . (int)$v['id'] . '">';
-        echo (int)$v['id'] . '. ' . h($v['title']) . ' <span class="diff-badge ' . ($dmap[$diff] ?? '') . '">' . h($diff) . '</span></button></h2>';
+        echo (int)$v['id'] . '. ' . h($v['title']) . ' <span class="diff-badge ' . ($dmap[$diff] ?? '') . '">' . h($diff) . '</span>';
+        $eng = $v['engine'] ?? 'all';
+        if ($eng !== 'all') echo ' <span class="engine-badge engine-' . h($eng) . '">' . strtoupper(h($eng)) . ' 전용</span>';
+        echo '</button></h2>';
         echo '<div id="v' . (int)$v['id'] . '" class="accordion-collapse collapse" data-bs-parent="#vulnAcc"><div class="accordion-body">';
         echo '<p><strong>목표:</strong> ' . h($v['goal']) . '</p>';
         echo '<p class="small text-secondary">OWASP: ' . h($v['owasp']) . ' · 경로: <code>' . h($v['route']) . '</code> · <a href="' . h($v['ref']) . '" target="_blank" rel="noopener">참고</a></p>';

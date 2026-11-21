@@ -32,8 +32,8 @@ BLACKOUT/
 ├─ AGENTS.md            ← 개발 절차(브랜치/검증/PR)
 ├─ compose.yaml         ← 원본 랩 통합 include
 ├─ blackout_lab/        ← 원본(Flask) 랩
-├─ labs/                ← 멀티엔진 랩(포털 + PHP/Node/Django + 공유 theme)
-│  ├─ portal/  theme/  php/  node/  django/  community/
+├─ labs/                ← 멀티엔진 랩(nginx 포털 + PHP/Node/Django + 공유 theme)
+│  ├─ nginx/  theme/  php/  node/  django/   (각 랩 독립 compose + 통합 compose.yaml)
 │  └─ README.md
 ├─ docs/                ← 기획·운영 문서
 │  ├─ 개발계획서.md  요구사항명세서.docx

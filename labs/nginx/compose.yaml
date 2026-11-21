@@ -1,0 +1,10 @@
+name: blackout_nginx
+# 정적 포털(엔진 선택 랜딩). 로컬 전용, 독립 실행용.
+services:
+  nginx:
+    build:
+      context: ..          # labs/ 를 컨텍스트로 (theme/ 공유)
+      dockerfile: nginx/Dockerfile
+    ports:
+      - "127.0.0.1:8090:80"
+    restart: unless-stopped

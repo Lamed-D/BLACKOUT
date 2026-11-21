@@ -376,7 +376,7 @@
       "fix": "셀 값 앞에 ' 또는 공백 접두, 위험 접두문자 이스케이프."
     },
     {
-      "id": 30, "category": "adv", "difficulty": "expert",
+      "id": 30, "category": "adv", "difficulty": "expert", "engine": "node",
       "title": "프로토타입 오염 (Prototype Pollution · Node 전용)",
       "owasp": "A08:2021 Software and Data Integrity Failures",
       "ref": "https://portswigger.net/web-security/prototype-pollution",
@@ -507,6 +507,55 @@
         { "desc": "소스 확보 후 시크릿 추출", "payload": "JWT_SECRET='secret' → 관리자 토큰 위조" }
       ],
       "fix": "비밀값은 환경변수/시크릿 매니저로 분리, 소스 노출 경로 차단."
+    },
+    {
+      "id": 41, "category": "auth", "difficulty": "medium", "engine": "php",
+      "title": "PHP 타입 저글링 — 매직 해시 (loose ==)",
+      "owasp": "A07:2021 Identification and Authentication Failures",
+      "ref": "https://www.php.net/manual/en/types.comparisons.php",
+      "goal": "느슨한 비교(==)에서 '0e[숫자]' 형태 해시가 0으로 취급되는 점을 이용해 토큰 검증을 우회한다.",
+      "route": "/verify_token",
+      "steps": [
+        { "desc": "매직 해시 문자열 입력(md5가 0e… 형태)", "payload": "240610708  (md5=0e462097431906509019562988736854)" }
+      ],
+      "fix": "항상 strict 비교(===)와 hash_equals() 사용, 숫자형 자동변환 금지."
+    },
+    {
+      "id": 42, "category": "auth", "difficulty": "medium", "engine": "php",
+      "title": "extract() 변수 주입",
+      "owasp": "A08:2021 Software and Data Integrity Failures",
+      "ref": "https://www.php.net/manual/en/function.extract.php",
+      "goal": "사용자 입력 배열을 extract() 로 전개해 인증/권한 플래그 변수를 덮어쓴다.",
+      "route": "/settings",
+      "steps": [
+        { "desc": "권한 플래그 변수 덮어쓰기", "payload": "/settings?is_admin=1" }
+      ],
+      "fix": "신뢰 불가 입력에 extract() 금지. 필요한 키만 명시적으로 읽기."
+    },
+    {
+      "id": 43, "category": "file", "difficulty": "expert", "engine": "php",
+      "title": "변수 함수 (Dynamic Call) — 임의 함수 실행",
+      "owasp": "A03:2021 Injection",
+      "ref": "https://www.php.net/manual/en/functions.variable-functions.php",
+      "goal": "사용자 입력을 함수명으로 쓰는 변수 함수 호출($fn())로 임의 PHP 함수를 실행(RCE)한다.",
+      "route": "/api/call?fn=&arg=",
+      "steps": [
+        { "desc": "명령 실행", "payload": "/api/call?fn=system&arg=id" },
+        { "desc": "파일 읽기", "payload": "/api/call?fn=file_get_contents&arg=/etc/passwd" }
+      ],
+      "fix": "사용자 입력을 함수명으로 사용 금지. 허용 함수 화이트리스트/분기문 사용."
+    },
+    {
+      "id": 44, "category": "adv", "difficulty": "easy", "engine": "php",
+      "title": "phpinfo() 정보 노출",
+      "owasp": "A05:2021 Security Misconfiguration",
+      "ref": "https://owasp.org/www-project-web-security-testing-guide/",
+      "goal": "운영 환경에 노출된 phpinfo() 로 경로·확장·환경변수 등 내부 정보를 수집한다.",
+      "route": "/phpinfo",
+      "steps": [
+        { "desc": "직접 접근", "payload": "/phpinfo" }
+      ],
+      "fix": "phpinfo() 등 진단 페이지를 운영에서 제거/차단."
     }
   ]
 }
