@@ -24,6 +24,9 @@ MariaDB와 신규 첨부파일은 Docker 볼륨에 보관됩니다. 기존 uploa
 
 | 환경 | 시작 명령 (저장소 루트) | Docker 호스트에서 접속 |
 | --- | --- | --- |
+| Django 커뮤니티 | `docker compose -f labs/community/compose.yaml up -d --build` | http://127.0.0.1:8093 |
 | PHP 설정 관찰 | `docker compose -f labs/php/compose.yaml up -d` | http://127.0.0.1:8091 |
 
 각 명령의 `up -d`를 `logs -f`, `ps`, `down`으로 바꿔 개별 관리합니다.
+
+Django 커뮤니티의 공개 주소는 `docker compose -f labs/community/compose.yaml logs cloudflared`에서 확인합니다. 루트 프로젝트의 터널은 읽기 전용 포털을 제공합니다.
