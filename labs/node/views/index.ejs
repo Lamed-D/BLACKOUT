@@ -1,0 +1,14 @@
+<%- include('header') %>
+<section class="card mb-4 community-hero"><div class="card-body p-4 p-lg-5 d-flex align-items-center justify-content-between gap-3">
+<div><span class="engine-badge engine-node">NODE COMMUNITY</span><h1 class="h2 fw-bold mt-3">함께 나누는 커뮤니티</h1><p class="text-secondary mb-0">질문과 경험을 자유롭게 공유하세요.</p></div>
+<% if (user) { %><a class="btn btn-primary" href="/post/write"><i class="bi bi-pencil-square"></i> 글쓰기</a><% } else { %><a class="btn btn-primary" href="/login">로그인하고 참여</a><% } %>
+</div></section>
+<div class="card"><div class="card-header bg-white d-flex justify-content-between"><h2 class="h5 fw-bold mb-0">최신 글</h2><span class="small text-secondary"><%= page %> / <%= pages %></span></div>
+<div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th class="ps-4">제목</th><th class="mobile-hide">작성자</th><th class="mobile-hide">조회</th><th class="mobile-hide">댓글</th><th class="mobile-hide">작성일</th></tr></thead><tbody>
+<% for (const item of notices) { %><tr class="table-warning"><td class="ps-4"><span class="badge bg-warning text-dark">공지</span> <%= item.title %></td><td class="mobile-hide"><%= item.author %></td><td class="mobile-hide">-</td><td class="mobile-hide">-</td><td class="mobile-hide"><%= new Date(item.created_at).toLocaleDateString('ko-KR') %></td></tr><% } %>
+<% for (const post of posts) { %><tr><td class="ps-4"><a class="fw-semibold text-decoration-none post-title d-inline-block" href="/post/<%= post.id %>"><%= post.title %></a></td><td class="mobile-hide"><%= post.author %></td><td class="mobile-hide"><%= post.views %></td><td class="mobile-hide"><%= post.comment_count %></td><td class="mobile-hide"><%= new Date(post.created_at).toLocaleDateString('ko-KR') %></td></tr><% } %>
+<% if (!posts.length) { %><tr><td colspan="5" class="p-5 text-center text-secondary">아직 글이 없습니다. 첫 글을 남겨 주세요.</td></tr><% } %>
+</tbody></table></div>
+<% if (pages > 1) { %><div class="card-footer"><nav aria-label="게시판 페이지"><ul class="pagination justify-content-center mb-0 flex-wrap"><% for (let n = Math.max(1,page-2); n <= Math.min(pages,page+2); n++) { %><li class="page-item <%= n === page ? 'active' : '' %>"><a class="page-link" href="/?page=<%= n %>"><%= n %></a></li><% } %></ul></nav></div><% } %>
+</div>
+<%- include('footer') %>
