@@ -16,6 +16,14 @@ docker compose -f labs/php/compose.yaml up -d --build   # http://127.0.0.1:8101
 게시판(최신순 + `1 2 3 … N` 페이지네이션 · 조회/댓글수) · 회원/로그인 · 마이페이지 ·
 관리자 대시보드 · 포인트 상점 · 파일 업로드/다운로드 · `/api/*` · 실습실.
 
+### 추가된 웹 기능
+- Google·Kakao·Naver 간편 로그인. `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `KAKAO_CLIENT_ID`, `KAKAO_CLIENT_SECRET`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`를 환경변수로 설정하고 각 공급자 콘솔에 `http://127.0.0.1:8101/oauth/<provider>/callback`을 등록합니다. 키가 없으면 로그인 화면에 안내가 표시됩니다. `OAUTH_REDIRECT_BASE`로 콜백의 기준 주소를 바꿀 수 있습니다.
+- 글쓰기와 수정 화면에 Quill 편집기, 글쓰기 화면에 파일 드롭 영역을 제공합니다. 편집기는 기존 HTML 저장 방식에 연결됩니다.
+- 마이페이지(`/account`)에 아바타, 가입일, 포인트, 작성 활동과 내 글의 최근 댓글을 표시합니다.
+- 상단의 달 아이콘으로 다크 모드를 전환할 수 있습니다. 선택은 브라우저에 저장됩니다.
+
+기존 게시판 검색·게시글 렌더·업로드·댓글 처리의 동결 규칙 때문에 다중 첨부 서버 처리, 카테고리 저장·필터, 대댓글 계층 출력은 이번 변경에 포함하지 않았습니다. 파일 드롭 영역은 기존 단일 첨부 입력을 사용합니다.
+
 ## 취약점 (PHP 실습실 43종 = 공통 39 + PHP 전용 4)
 공통 카탈로그는 [`../theme/vulns.json`](../theme/vulns.json) 참고(SQLi·XSS·인증/권한·파일/명령·고급/로직).
 프로토타입 오염은 Node 전용이라 PHP 실습실에는 표시되지 않습니다.

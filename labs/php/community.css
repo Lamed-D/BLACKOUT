@@ -1,0 +1,20 @@
+.theme-toggle { min-width: 2.3rem; }
+.account-avatar { width: 4rem; height: 4rem; object-fit: cover; border-radius: 50%; flex: none; }
+.avatar-initial { display: grid; place-items: center; background: #dbeafe; color: #1d4ed8; font-size: 1.6rem; font-weight: 700; }
+.sso-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem; }
+.sso-options p { grid-column: 1 / -1; }
+.sso-button { display: block; border-radius: .5rem; padding: .6rem .2rem; text-align: center; text-decoration: none; font-weight: 700; font-size: .85rem; }
+.sso-google { color: #174ea6; background: #e8f0fe; }
+.sso-kakao { color: #191919; background: #fee500; }
+.sso-naver { color: #fff; background: #03c75a; }
+.attachment-drop { border: 2px dashed #94a3b8; border-radius: .75rem; padding: 1.5rem; text-align: center; cursor: pointer; margin-bottom: .5rem; }
+.attachment-drop.dragging { border-color: #2563eb; background: #eff6ff; }
+#post-editor { min-height: 230px; background: #fff; }
+.ql-toolbar { border-radius: .5rem .5rem 0 0; }
+.ql-container { border-radius: 0 0 .5rem .5rem; margin-bottom: .75rem; }
+[data-theme="dark"] { color-scheme: dark; --c-bg: #0f172a; --c-card: #1e293b; --c-border: #334155; --c-text: #e2e8f0; --c-sub: #94a3b8; }
+[data-theme="dark"] .custom-nav, [data-theme="dark"] .footer-custom { background: #1e293b !important; }
+[data-theme="dark"] .card, [data-theme="dark"] .card-body, [data-theme="dark"] .table { color: #e2e8f0; background: #1e293b; }
+[data-theme="dark"] .form-control { color: #e2e8f0; background: #0f172a; border-color: #475569; }
+[data-theme="dark"] .text-secondary { color: #a5b4c6 !important; }
+@media (max-width: 640px) { .sso-options { grid-template-columns: 1fr; } .custom-nav .container > div { gap: .25rem !important; } .custom-nav .nav-link { font-size: .78rem; } .table { font-size: .8rem; } }

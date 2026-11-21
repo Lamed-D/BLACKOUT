@@ -12,6 +12,8 @@ require_once __DIR__ . '/pages/shop.php';
 require_once __DIR__ . '/pages/practice.php';
 require_once __DIR__ . '/pages/api.php';
 require_once __DIR__ . '/pages/phpvuln.php';
+require_once __DIR__ . '/pages/oauth.php';
+require_once __DIR__ . '/pages/community.php';
 
 db(); // 최초 요청 시 스키마/시드 보장
 
@@ -25,7 +27,10 @@ if ($path === '/api/call') { page_dynamic_call(); exit; }
 if (preg_match('#^/api/([a-z_]+)$#', $path, $m)) { api_dispatch($m[1]); exit; }
 
 switch (true) {
+    case preg_match('#^/oauth/(google|kakao|naver)/login$#', $path, $m) === 1: page_oauth_login($m[1]); break;
+    case preg_match('#^/oauth/(google|kakao|naver)/callback$#', $path, $m) === 1: page_oauth_callback($m[1]); break;
     case $path === '/':                 page_home(); break;
+    case $path === '/account':          page_account_overview(); break;
     case $path === '/login':            page_login(); break;
     case $path === '/register':         page_register(); break;
     case $path === '/logout':           page_logout(); break;

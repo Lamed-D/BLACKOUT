@@ -10,6 +10,8 @@ RUN docker-php-ext-install pdo_mysql \
 COPY php/src/ /var/www/html/
 COPY theme/style.css  /var/www/html/style.css
 COPY theme/vulns.json /var/www/html/vulns.json
+COPY php/community.css /var/www/html/community.css
+COPY php/community.js /var/www/html/community.js
 
 # 쓰기 가능한 업로드 디렉터리
 RUN mkdir -p /var/www/html/uploads \
