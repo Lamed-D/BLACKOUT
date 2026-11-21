@@ -1,6 +1,0 @@
-.env
-.env.*
-uploads/
-__pycache__/
-*.db
-portal/

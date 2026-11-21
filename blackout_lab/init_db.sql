@@ -3,7 +3,7 @@
 
 USE blackout_db;
 
--- ── 최초 DB 구성용 테이블 초기화 (빈 볼륨에서 실행) ──────────────────
+-- ── Drop existing tables (재시작 시 초기화) ──────────────────
 DROP TABLE IF EXISTS login_logs;
 DROP TABLE IF EXISTS post_likes;
 DROP TABLE IF EXISTS files;
