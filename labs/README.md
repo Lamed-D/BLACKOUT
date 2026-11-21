@@ -18,8 +18,10 @@
 # 전체(포털 + 가용 엔진) 일괄 기동
 docker compose -f labs/compose.yaml up -d --build
 
-# 개별 엔진만
-docker compose -f labs/php/compose.yaml up -d --build      # PHP  :8101
+# 각 랩 독립 실행 (랩별 compose)
+docker compose -f labs/nginx/compose.yaml  up -d --build   # 포털   :8090
+docker compose -f labs/php/compose.yaml    up -d --build   # PHP    :8101
+docker compose -f labs/django/compose.yaml up -d --build   # Django :8103 (임시 커뮤니티, 재작성 예정)
 ```
 종료: 위 명령의 `up -d --build` 를 `down` 으로 바꿔 실행.
 

@@ -1,29 +1,25 @@
-name: blackout_community
+name: blackout_django
+# 로컬 전용. cloudflared/터널 없음(추후 사용자가 직접 추가).
+# ※ 현재는 임시 커뮤니티(안전 버전). 추후 BLACKOUT 취약 엔진으로 전면 재작성 예정.
 services:
   web:
     build: .
-    networks: [public, default]
-    ports: ["127.0.0.1:8093:8000"]
+    ports:
+      - "127.0.0.1:8103:8000"
+    environment:
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:-django-lab}
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      POSTGRES_PASSWORD: ${COMMUNITY_DB_PASSWORD:-community-lab}
     volumes:
       - keys:/keys
-    restart: unless-stopped
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    command: ["tunnel", "--no-autoupdate", "--url", "http://web:8000"]
-    depends_on: [web]
-    networks: [public]
     restart: unless-stopped
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: community
       POSTGRES_USER: community
-      POSTGRES_PASSWORD: ${COMMUNITY_DB_PASSWORD:-community-lab}
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:-django-lab}
     volumes:
       - database:/var/lib/postgresql/data
     healthcheck:
@@ -35,6 +31,3 @@ services:
 volumes:
   database:
   keys:
-
-networks:
-  public:
