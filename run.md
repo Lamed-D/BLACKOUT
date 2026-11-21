@@ -1,4 +1,4 @@
-﻿# BLACKOUT 실행
+# BLACKOUT 실행
 저장소 루트에서 실행합니다. Compose의 include를 지원하는 Docker Compose v2가 필요합니다.
 
 ~~~sh
@@ -19,3 +19,11 @@ docker compose --profile board down
 ~~~
 
 MariaDB와 신규 첨부파일은 Docker 볼륨에 보관됩니다. 기존 uploads 폴더의 자료는 자동 이전되지 않습니다. init_db.sql은 빈 DB 볼륨을 처음 시작할 때 적용됩니다.
+
+## 독립 실습 서버
+
+| 환경 | 시작 명령 (저장소 루트) | Docker 호스트에서 접속 |
+| --- | --- | --- |
+| PHP 설정 관찰 | `docker compose -f labs/php/compose.yaml up -d` | http://127.0.0.1:8091 |
+
+각 명령의 `up -d`를 `logs -f`, `ps`, `down`으로 바꿔 개별 관리합니다.

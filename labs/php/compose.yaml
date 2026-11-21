@@ -1,0 +1,9 @@
+name: blackout_php
+services:
+  php:
+    image: php:8.4-apache
+    ports: ["127.0.0.1:8091:80"]
+    volumes:
+      - ./site:/var/www/html:ro
+      - ./lab.ini:/usr/local/etc/php/conf.d/lab.ini:ro
+    restart: unless-stopped
