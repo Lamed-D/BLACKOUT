@@ -35,6 +35,15 @@ docker-compose.override.yml
 *.sqlite3
 mariadb_data/
 
+# 📦 Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# 🐍 Django/런타임 산출물
+staticfiles/
+*.log
+
 # 📤 Uploads (업로드된 파일은 제외하고 폴더 구조만 유지하고 싶을 때)
 blackout_lab/uploads/*
 !blackout_lab/uploads/.gitkeep

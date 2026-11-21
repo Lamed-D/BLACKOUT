@@ -1,9 +1,33 @@
 name: blackout_php
+# 로컬 전용. cloudflared 없음. (추후 사용자가 직접 터널 추가)
 services:
   php:
-    image: php:8.4-apache
-    ports: ["127.0.0.1:8091:80"]
-    volumes:
-      - ./site:/var/www/html:ro
-      - ./lab.ini:/usr/local/etc/php/conf.d/lab.ini:ro
+    build:
+      context: ..          # labs/ 를 컨텍스트로 (theme/ 공유)
+      dockerfile: php/Dockerfile
+    environment:
+      DB_HOST: db
+      DB_NAME: blackout
+      DB_USER: blackout
+      DB_PASSWORD: blackout_pass
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8101:80"
+    restart: unless-stopped
+
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: blackout
+      MARIADB_USER: blackout
+      MARIADB_PASSWORD: blackout_pass
+      MARIADB_ROOT_PASSWORD: root_pass
+    # 호스트에 포트 노출하지 않음(엔진 컨테이너 내부 통신 전용)
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
     restart: unless-stopped

@@ -1,0 +1,6 @@
+RewriteEngine On
+# 존재하는 실제 파일/디렉터리는 그대로 서빙 (업로드된 웹셸 .php 실행 = 의도적 취약)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+# 나머지는 프런트 컨트롤러로
+RewriteRule ^ index.php [QSA,L]

@@ -140,7 +140,7 @@
           onclick="fetch('/api/clear_telemetry',{method:'POST'}).then(()=>location.reload())">Clear</button>
         <button class="btn btn-sm py-0 px-2"
           style="font-size:11px; border:1px solid #334155; color:#94a3b8; background:transparent;"
-          onclick="document.getElementById('devConsole').style.display='none'">✕</button>
+          onclick="document.getElementById('devConsole').style.display='none';document.body.style.paddingBottom=''">✕</button>
       </div>
     </div>
     <div id="consoleLogs" class="px-3 py-2">
@@ -166,7 +166,7 @@
 
   <!-- Floating Terminal Toggle -->
   <button class="position-fixed bottom-0 end-0 m-3 btn shadow"
-    onclick="document.getElementById('devConsole').style.display='block'"
+    onclick="document.getElementById('devConsole').style.display='block';document.body.style.paddingBottom='216px'"
     style="z-index:1040; background:#1e293b; color:#60a5fa; border:1px solid #334155; border-radius:10px; width:44px; height:44px;"
     title="Open Exploit Telemetry">
     <i class="bi bi-terminal"></i>
