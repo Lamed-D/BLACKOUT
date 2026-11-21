@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BLACKOUT 멀티엔진 실습 포털</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="bg-shape shape-a"></div>
+  <div class="bg-shape shape-b"></div>
+
+  <nav class="navbar custom-nav">
+    <div class="container">
+      <span class="navbar-brand">
+        <i class="bi bi-shield-lock-fill" style="color:#2563eb"></i>
+        BLACKOUT <span style="color:#2563eb">멀티엔진</span> 실습 포털
+      </span>
+      <span class="mode-badge mode-local"><i class="bi bi-hdd-network"></i> LOCAL ONLY · 127.0.0.1</span>
+    </div>
+  </nav>
+
+  <div class="container my-5" style="position:relative; z-index:1; max-width:980px;">
+    <div class="card mb-4">
+      <div class="card-body p-5">
+        <h2 class="fw-bold mb-3"><i class="bi bi-diagram-3 text-primary"></i> 같은 취약점, 다른 백엔드 엔진</h2>
+        <p class="text-secondary fs-5 mb-2">
+          BLACKOUT 커뮤니티를 <strong>PHP · Node.js · Django</strong> 세 가지 백엔드로 구현한
+          로컬 전용 모의해킹 실습 환경입니다. 동일한 30종 취약점이 스택별로 어떻게 나타나는지 비교하며 학습하세요.
+        </p>
+        <p class="mb-0"><span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+          <i class="bi bi-exclamation-triangle-fill"></i> 의도적으로 취약하게 설계됨 — 반드시 로컬에서만 구동
+        </span></p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card engine-card h-100">
+          <div class="card-body p-4 text-center">
+            <div class="engine-badge engine-php mb-3 d-inline-block">PHP · native</div>
+            <h4 class="fw-bold">PHP 엔진</h4>
+            <p class="text-secondary small">PHP 8.4 + SQLite(PDO). 가장 전통적인 웹해킹 실습 스택.</p>
+            <a href="http://127.0.0.1:8101/" class="btn btn-primary w-100 mb-2">열기 · 8101</a>
+            <a href="http://127.0.0.1:8101/practice" class="btn btn-outline-secondary btn-sm w-100">실습실 가이드</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card engine-card h-100">
+          <div class="card-body p-4 text-center">
+            <div class="engine-badge engine-node mb-3 d-inline-block">Node · Express</div>
+            <h4 class="fw-bold">Node.js 엔진</h4>
+            <p class="text-secondary small">Express + EJS + SQLite. prototype pollution 등 JS 특화 취약점 포함.</p>
+            <button class="btn btn-secondary w-100 mb-2" disabled>준비중 · 8102</button>
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">🚧 곧 추가</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card engine-card h-100">
+          <div class="card-body p-4 text-center">
+            <div class="engine-badge engine-django mb-3 d-inline-block">Django</div>
+            <h4 class="fw-bold">Django 엔진</h4>
+            <p class="text-secondary small">Django 5 + SQLite. 의도적 취약 버전으로 재구성.</p>
+            <button class="btn btn-secondary w-100 mb-2" disabled>준비중 · 8103</button>
+            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">🚧 곧 추가</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold"><i class="bi bi-terminal text-secondary"></i> 실행 방법 (로컬)</h5>
+        <pre class="mb-2">docker compose -f labs/compose.yaml up -d --build</pre>
+        <p class="text-secondary small mb-0">개별 엔진만: <code>docker compose -f labs/php/compose.yaml up -d --build</code>
+          (node/django 동일). 시드 계정: <code>admin / admin123</code>, <code>testuser / testpass</code>, <code>alice / alice1234</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer-custom py-4 text-center mt-5">
+    <div class="container">
+      <p class="mb-0" style="color:#94a3b8;">
+        <i class="bi bi-shield-lock me-1"></i> BLACKOUT Multi-Engine Web-Security Lab © 2026 · 로컬 학습 전용
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
