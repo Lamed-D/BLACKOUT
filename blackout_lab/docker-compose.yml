@@ -81,6 +81,19 @@ services:
       - blackout_net
     restart: unless-stopped
 
+  # ───────────────────────────────────────────
+  # 4. ☁️ 배달 기사 (Cloudflare Quick Tunnel - 토큰 불필요)
+  # ───────────────────────────────────────────
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: blackout_tunnel
+    command: tunnel --no-autoupdate --url http://apache-server:8080
+    depends_on:
+      - apache-server
+    networks:
+      - blackout_net
+    restart: unless-stopped
+
 # ───────────────────────────────────────────
 # 볼륨 및 네트워크 정의
 # ───────────────────────────────────────────
