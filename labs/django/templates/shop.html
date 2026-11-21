@@ -1,0 +1,5 @@
+{% extends "base.html" %}{% block title %}포인트 상점{% endblock %}{% block content %}
+<div class="card mb-4"><div class="card-body p-4"><h1 class="h3 fw-bold">포인트 상점</h1><p class="text-secondary mb-0">모은 포인트로 상품을 구매하세요. {% if profile %}현재 <b>{{ profile.points }}P</b>{% endif %}</p></div></div>
+<div class="row g-3">{% for product in products %}<div class="col-md-4"><div class="card h-100"><div class="card-body p-4 d-flex flex-column"><h2 class="h5 fw-bold">{{ product.name }}</h2><p class="text-secondary">{{ product.description }}</p><p class="mt-auto"><b>{{ product.price }}P</b> · 재고 {{ product.stock }}</p>
+<form method="post" action="/shop/{{ product.pk }}/buy">{% csrf_token %}<button class="btn btn-primary w-100" {% if not user.is_authenticated or product.stock < 1 %}disabled{% endif %}>구매</button></form></div></div></div>{% endfor %}</div>
+{% endblock %}

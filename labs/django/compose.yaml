@@ -1,18 +1,18 @@
 name: blackout_django
 # 로컬 전용. cloudflared/터널 없음(추후 사용자가 직접 추가).
-# ※ 현재는 임시 커뮤니티(안전 버전). 추후 BLACKOUT 취약 엔진으로 전면 재작성 예정.
 services:
   web:
-    build: .
+    build:
+      context: ..
+      dockerfile: django/Dockerfile
     ports:
       - "127.0.0.1:8103:8000"
     environment:
       POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:-django-lab}
+      DB_HOST: db
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - keys:/keys
     restart: unless-stopped
   db:
     image: postgres:16-alpine
@@ -20,14 +20,9 @@ services:
       POSTGRES_DB: community
       POSTGRES_USER: community
       POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:-django-lab}
-    volumes:
-      - database:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "community", "-d", "community"]
       interval: 3s
       timeout: 3s
       retries: 20
     restart: unless-stopped
-volumes:
-  database:
-  keys:
