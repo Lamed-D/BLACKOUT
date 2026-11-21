@@ -34,6 +34,18 @@ docker-compose.override.yml
 *.db
 *.sqlite3
 mariadb_data/
+# labs 시드 DB는 커밋 포함(클론 즉시 구동용)
+!labs/**/seed/
+!labs/**/seed/*.db
+
+# 📦 Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# 🐍 Django/런타임 산출물
+staticfiles/
+*.log
 
 # 📤 Uploads (업로드된 파일은 제외하고 폴더 구조만 유지하고 싶을 때)
 blackout_lab/uploads/*
