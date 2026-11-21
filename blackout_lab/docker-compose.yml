@@ -80,7 +80,9 @@ services:
   portal:
     image: nginx:stable-alpine
     volumes:
-      - ./portal:/usr/share/nginx/html:ro
+      - ./portal/index.html:/usr/share/nginx/html/index.html:ro
+      - ./portal/guide.html:/usr/share/nginx/html/guide.html:ro
+      - ./static/style.css:/usr/share/nginx/html/static/style.css:ro
     ports:
       - "127.0.0.1:8088:80"
     networks: [public_net]
