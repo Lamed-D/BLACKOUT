@@ -1,6 +1,5 @@
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
-from django.views.generic import TemplateView
 
 from board import views
 
@@ -13,5 +12,13 @@ urlpatterns = [
     path("post/<int:pk>", views.detail, name="detail"),
     path("post/<int:pk>/edit", views.write),
     path("post/<int:pk>/comment", views.comment),
-    path("practice", TemplateView.as_view(template_name="practice.html")),
+    path("post/<int:pk>/like", views.like),
+    path("profile", views.profile),
+    path("shop", views.shop, name="shop"),
+    path("shop/<int:pk>/buy", views.buy),
+    path("admin", views.admin_panel, name="admin_panel"),
+    path("admin/notice", views.create_notice),
+    path("notice/<int:pk>", views.notice_detail),
+    path("practice", views.practice),
+    path("style.css", views.style),
 ]

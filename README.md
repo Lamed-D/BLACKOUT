@@ -1,6 +1,6 @@
 # BLACKOUT — 웹 보안 실습 플랫폼
 
-> ⚠️ **교육용 · 의도적 취약 환경.** 모든 구성요소는 웹 취약점 학습을 위해 **일부러 취약하게** 만들어졌습니다.
+> ⚠️ **교육용 · 로컬 환경.** PHP 및 원본 랩은 의도적으로 취약합니다. Node·Django 커뮤니티 앱 셸은 일반 기능을 안전하게 구현한 상태입니다.
 > 반드시 **본인의 로컬 환경에서만** 구동하세요. 공개망 노출은 금지합니다.
 
 BLACKOUT은 회원·게시판·관리자 기능을 갖춘 커뮤니티를 토대로 웹 취약점을 실습하는 모의해킹 랩입니다.
@@ -9,7 +9,7 @@ BLACKOUT은 회원·게시판·관리자 기능을 갖춘 커뮤니티를 토대
 | 구분 | 설명 | 스택 | 위치 |
 | --- | --- | --- | --- |
 | **원본 랩** | 최초 구현. 커뮤니티 + 24종 취약점 + 실습실 | Flask · MariaDB · Apache | [`blackout_lab/`](blackout_lab/) |
-| **멀티엔진 랩** | 같은 UI를 백엔드 엔진별로 재현(비교 학습), 40종 취약점 | PHP · Node.js · Django · MariaDB/PostgreSQL | [`labs/`](labs/) |
+| **멀티엔진 랩** | 공유 UI와 카탈로그. PHP 실습 랩 및 Node·Django 커뮤니티 앱 셸 | PHP · Node.js · Django · MariaDB/PostgreSQL | [`labs/`](labs/) |
 
 ## 빠른 시작 (멀티엔진 랩 · 로컬 전용 권장)
 
@@ -18,7 +18,7 @@ BLACKOUT은 회원·게시판·관리자 기능을 갖춘 커뮤니티를 토대
 docker compose -f labs/compose.yaml up -d --build
 ```
 - 포털: http://127.0.0.1:8090 → 엔진 선택
-- PHP 엔진: http://127.0.0.1:8101 · Node 엔진: http://127.0.0.1:8102 (Django :8103 준비중)
+- PHP 엔진: http://127.0.0.1:8101 · Node 엔진: http://127.0.0.1:8102 · Django 엔진: http://127.0.0.1:8103
 - 시드 계정: `admin/admin123`, `testuser/testpass`, `alice/alice1234`
 - 자세한 내용: [`labs/README.md`](labs/README.md)
 

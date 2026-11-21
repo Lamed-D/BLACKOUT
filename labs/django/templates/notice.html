@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% block title %}{{ notice.title }}{% endblock %}{% block content %}
+<div class="card"><div class="card-body p-4"><a href="/" class="small text-decoration-none">← 목록</a><h1 class="h3 fw-bold mt-3">{{ notice.title }}</h1><p class="text-secondary small">{{ notice.author.username }} · {{ notice.created|date:"Y-m-d H:i" }}</p><hr><div class="post-body py-3">{{ notice.content }}</div></div></div>
+{% endblock %}

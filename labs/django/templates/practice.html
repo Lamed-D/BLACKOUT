@@ -1,7 +1,10 @@
 {% extends "base.html" %}
-{% block title %}실습 가이드{% endblock %}
-{% block content %}<h1>Django 게시판 실습</h1>
-<h2>계정과 세션</h2><p>회원가입 후 로그인하세요. 개발자 도구의 쿠키 목록에서 community_session의 HttpOnly 속성을 확인하고 로그아웃한 뒤 상태 변화를 비교하세요.</p>
-<h2>작성자 권한</h2><p>글을 작성하고 같은 계정으로 제목을 수정하세요. 다른 브라우저 세션에서 두 번째 계정으로 로그인한 뒤 같은 글의 수정 메뉴와 댓글 기능을 비교하세요.</p>
-<h2>출력 처리</h2><p>댓글에 &lt;b&gt;표시 확인&lt;/b&gt;을 입력하세요. 화면에 보이는 글자와 페이지 소스를 비교하면 템플릿이 기호를 어떻게 처리하는지 확인할 수 있습니다.</p>
+{% block title %}실습실{% endblock %}
+{% block content %}<div class="card mb-4"><div class="card-body p-4"><h1 class="h3 fw-bold">실습실 카탈로그</h1><p class="text-secondary mb-0">공유 카탈로그에서 Django 엔진 항목을 읽어 표시합니다. {{ vulns|length }}개 항목</p></div></div>
+<div class="d-flex gap-2 flex-wrap mb-3" role="group" aria-label="카테고리"><button class="btn btn-primary btn-sm filter" data-cat="all">전체</button>{% for category in categories %}{% if category.key != "all" %}<button class="btn btn-outline-primary btn-sm filter" data-cat="{{ category.key }}">{{ category.label }}</button>{% endif %}{% endfor %}</div>
+<div class="accordion" id="practice-list">{% for item in vulns %}<div class="accordion-item practice-row" data-cat="{{ item.category }}"><h2 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#v{{ item.id }}">{{ item.id }}. {{ item.title }} <span class="diff-badge diff-{{ item.difficulty }}">{{ item.difficulty }}</span></button></h2>
+<div class="accordion-collapse collapse" id="v{{ item.id }}" data-bs-parent="#practice-list"><div class="accordion-body"><p><b>목표:</b> {{ item.goal }}</p><p>{{ item.detail }}</p>{% if item.diagram %}<pre>{{ item.diagram }}</pre>{% endif %}
+{% for step in item.steps %}<div class="alert alert-dark"><b>STEP {{ forloop.counter }}.</b> {{ step.desc }}{% if step.payload %}<code class="d-block mt-2">{{ step.payload }}</code>{% endif %}</div>{% endfor %}
+<p><b>대응책:</b> {{ item.fix }}</p></div></div></div>{% endfor %}</div>
+<script>document.querySelectorAll('.filter').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.replace('btn-primary','btn-outline-primary'));button.classList.replace('btn-outline-primary','btn-primary');document.querySelectorAll('.practice-row').forEach(row=>row.hidden=button.dataset.cat!=='all'&&row.dataset.cat!==button.dataset.cat)}));</script>
 {% endblock %}

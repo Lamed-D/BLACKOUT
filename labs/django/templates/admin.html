@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block title %}관리자{% endblock %}{% block content %}
+<h1 class="h3 fw-bold mb-4">관리자 대시보드</h1><p class="text-secondary">누적 주문 {{ order_count }}건</p>
+<div class="row g-4"><div class="col-lg-5"><div class="card"><div class="card-body p-4"><h2 class="h5 fw-bold">공지 작성</h2><form method="post" action="/admin/notice">{% csrf_token %}
+<label class="form-label" for="notice-title">제목</label><input class="form-control" id="notice-title" name="title" maxlength="200" required>
+<label class="form-label" for="notice-content">내용</label><textarea class="form-control" id="notice-content" name="content" rows="5" required></textarea><button class="btn btn-primary">등록</button></form>
+<h3 class="h6 fw-bold mt-4">최근 공지</h3>{% for notice in notices %}<a class="d-block border-bottom py-2" href="/notice/{{ notice.pk }}">{{ notice.title }}</a>{% endfor %}</div></div></div>
+<div class="col-lg-7"><div class="card"><div class="card-body p-4"><h2 class="h5 fw-bold">회원</h2><div class="table-responsive"><table class="table"><thead><tr><th>아이디</th><th>권한</th><th>포인트</th></tr></thead><tbody>{% for member in members %}<tr><td>{{ member.user.username }}</td><td>{% if member.user.is_staff %}admin{% else %}user{% endif %}</td><td>{{ member.points }}</td></tr>{% endfor %}</tbody></table></div></div></div></div></div>
+{% endblock %}
