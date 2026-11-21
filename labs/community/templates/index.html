@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>자유 게시판</h1>
+<form class="actions"><label>제목 검색 <input name="q" value="{{ query }}"></label><button>검색</button></form>
+<table><thead><tr><th>번호</th><th>제목</th><th>작성자</th><th>작성일</th></tr></thead><tbody>
+<tr><td>공지</td><td><a href="/practice">Django 게시판 실습 안내</a></td><td>BLACKOUT</td><td>—</td></tr>
+{% for post in page %}<tr><td>{{ post.pk }}</td><td><a href="{% url 'detail' post.pk %}">{{ post.title }}</a></td><td>{{ post.author.username }}</td><td>{{ post.created|date:"Y-m-d" }}</td></tr>
+{% empty %}<tr><td colspan="4">표시할 게시글이 없습니다.</td></tr>{% endfor %}</tbody></table>
+{% if page.has_previous %}<a href="?q={{ query|urlencode }}&amp;page={{ page.previous_page_number }}">이전</a>{% endif %}
+{% if page.has_next %}<a href="?q={{ query|urlencode }}&amp;page={{ page.next_page_number }}">다음</a>{% endif %}
+{% endblock %}

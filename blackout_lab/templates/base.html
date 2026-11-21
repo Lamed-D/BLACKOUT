@@ -34,6 +34,7 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto align-items-center gap-1">
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('static', filename='guide.html') }}">실습 가이드</a></li>
 
           {% if session.session_id or session.get('user') %}
           <li class="nav-item">

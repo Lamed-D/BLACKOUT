@@ -1,0 +1,40 @@
+name: blackout_community
+services:
+  web:
+    build: .
+    networks: [public, default]
+    ports: ["127.0.0.1:8093:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      POSTGRES_PASSWORD: ${COMMUNITY_DB_PASSWORD:-community-lab}
+    volumes:
+      - keys:/keys
+    restart: unless-stopped
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: ["tunnel", "--no-autoupdate", "--url", "http://web:8000"]
+    depends_on: [web]
+    networks: [public]
+    restart: unless-stopped
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: community
+      POSTGRES_USER: community
+      POSTGRES_PASSWORD: ${COMMUNITY_DB_PASSWORD:-community-lab}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "community", "-d", "community"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+volumes:
+  database:
+  keys:
+
+networks:
+  public:

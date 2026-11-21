@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}자유 게시판{% endblock %} · BLACKOUT Security Lab</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:1rem/1.6 system-ui,sans-serif;background:#f1f5fc;color:#17243b}nav,main{max-width:980px;margin:auto;padding:1rem}header,article{background:white}nav,.actions{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}nav strong{margin-right:auto}strong span,a{color:#2359af}main{padding-top:2rem}article{padding:clamp(1rem,4vw,2.5rem);border-radius:1rem}h1{line-height:1.25}table{width:100%;border-collapse:collapse}th,td{text-align:left;border-bottom:1px solid #dbe3f0;padding:.65rem}input,textarea,button{font:inherit;padding:.4rem;max-width:100%}button{cursor:pointer}textarea{width:100%}p,td{overflow-wrap:anywhere}.errorlist{color:#9c2530}
+</style></head><body><header><nav><strong>BLACKOUT <span>Security</span> Lab</strong><a href="/">자유 게시판</a><a href="/practice">실습 가이드</a>
+{% if user.is_authenticated %}<a href="/post/write">글쓰기</a><span>{{ user.username }}</span><form action="/logout" method="post">{% csrf_token %}<button>로그아웃</button></form>
+{% else %}<a href="/login">로그인</a><a href="/register">회원가입</a>{% endif %}
+</nav></header><main><article>{% block content %}{% endblock %}</article></main></body></html>

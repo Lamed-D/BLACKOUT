@@ -1,77 +1,73 @@
-version: '3.8'
 
 services:
-  # ───────────────────────────────────────────
-  # 1. 🐍 주방 (백엔드: Flask + Gunicorn)
-  # ───────────────────────────────────────────
+  # 1. Flask + Gunicorn
   flask-app:
-    build: .                        # 현재 폴더(blackout_lab)의 Dockerfile로 빌드
+    profiles: [board]
+    build: .
     container_name: blackout_flask
     expose:
-      - "5000"                      # 외부 직접 노출 없이 내부 네트워크(apache)에만 개방
+      - "5000"
     environment:
-      - FLASK_ENV=production
-      - DB_HOST=mariadb
-      - DB_PORT=3306
-      - DB_NAME=blackout_db
-      - DB_USER=blackout_user
-      - DB_PASSWORD=blackout_pass
-      # ──── 소셜 로그인 키 (값을 직접 채워 넣으세요) ────
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID:-}
-      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET:-}
-      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID:-}
-      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET:-}
-      - OAUTHLIB_INSECURE_TRANSPORT=1
-      - OAUTHLIB_RELAX_TOKEN_SCOPE=1
+      FLASK_ENV: production
+      DB_HOST: mariadb
+      DB_PORT: 3306
+      DB_NAME: blackout_db
+      DB_USER: blackout_user
+      DB_PASSWORD: ${DB_PASSWORD:-blackout_pass}
+
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:-}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
+
+      OAUTHLIB_INSECURE_TRANSPORT: "1"
+      OAUTHLIB_RELAX_TOKEN_SCOPE: "1"
+
     volumes:
-      - ./uploads:/blackout_lab/uploads   # 파일 업로드 데이터 유지
+      - uploads:/blackout_lab/uploads
     depends_on:
       mariadb:
-        condition: service_healthy  # MariaDB 헬스체크 통과 후 Flask 시작
+        condition: service_healthy
     networks:
       - blackout_net
     restart: unless-stopped
 
-  # ───────────────────────────────────────────
-  # 2. 🌐 홀 매니저 (웹 서버: Apache2 리버스 프록시)
-  # ───────────────────────────────────────────
+  # 2. Apache Reverse Proxy
   apache-server:
+    profiles: [board]
     image: httpd:2.4
     container_name: blackout_apache
     ports:
-      - "8080:8080"                 # 브라우저(8080) ↔ Apache(8080)
+      - "127.0.0.1:9999:8080"
     volumes:
-      # my-site.conf를 아파치 설정 extra 폴더에 마운트
-      - ./my-site.conf:/usr/local/apache2/conf/extra/my-site.conf
-      # httpd.conf에서 mod_proxy를 활성화하고 my-site.conf를 Include하기 위한 커스텀 설정
-      - ./httpd-proxy.conf:/usr/local/apache2/conf/httpd-proxy.conf
-    # 기본 httpd.conf의 Listen 80을 8080으로 바꾸고 우리 설정을 Include
-    command: sh -c "sed -i 's/Listen 80/Listen 8080/' /usr/local/apache2/conf/httpd.conf && echo 'Include /usr/local/apache2/conf/httpd-proxy.conf' >> /usr/local/apache2/conf/httpd.conf && httpd-foreground"
+      - ./my-site.conf:/usr/local/apache2/conf/extra/my-site.conf:ro
+      - ./httpd-proxy.conf:/usr/local/apache2/conf/httpd-proxy.conf:ro
+    command: >
+      sh -ec "sed 's/^Listen 80$/Listen 8080/'
+      /usr/local/apache2/conf/httpd.conf > /tmp/blackout-httpd.conf &&
+      exec httpd-foreground -f /tmp/blackout-httpd.conf
+      -c 'Include /usr/local/apache2/conf/httpd-proxy.conf'"
     depends_on:
       - flask-app
     networks:
       - blackout_net
     restart: unless-stopped
 
-  # ───────────────────────────────────────────
-  # 3. 🗄️ 데이터베이스 (MariaDB 전용 컨테이너)
-  # ───────────────────────────────────────────
+  # 3. MariaDB
   mariadb:
+    profiles: [board]
     image: mariadb:10.11
     container_name: blackout_mariadb
     environment:
-      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
       MYSQL_DATABASE: blackout_db
       MYSQL_USER: blackout_user
-      MYSQL_PASSWORD: blackout_pass
+      MYSQL_PASSWORD: ${DB_PASSWORD:-blackout_pass}
     volumes:
-      - mariadb_data:/var/lib/mysql  # DB 데이터 영구 보존
-      # 최초 실행 시 init_db.sql을 자동으로 실행하여 테이블 & 시드 데이터 생성
-      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
-    ports:
-      - "3307:3306"                  # 서버 3307 -> 컨테이너 3306 (충돌 방지)
+      - mariadb_data:/var/lib/mysql
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql:ro
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
@@ -81,12 +77,37 @@ services:
       - blackout_net
     restart: unless-stopped
 
-# ───────────────────────────────────────────
-# 볼륨 및 네트워크 정의
-# ───────────────────────────────────────────
+  portal:
+    image: nginx:stable-alpine
+    volumes:
+      - ./portal/index.html:/usr/share/nginx/html/index.html:ro
+      - ./static/guide.html:/usr/share/nginx/html/guide.html:ro
+      - ./static/style.css:/usr/share/nginx/html/static/style.css:ro
+    ports:
+      - "127.0.0.1:8088:80"
+    networks: [public_net]
+    restart: unless-stopped
+
+  # 4. Cloudflare Quick Tunnel
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: blackout_cloudflared
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --url
+      - http://portal:80
+    depends_on:
+      - portal
+    networks:
+      - public_net
+    restart: unless-stopped
+
 volumes:
-  mariadb_data:                      # MariaDB 데이터 영구 볼륨
+  uploads:
+  mariadb_data:
 
 networks:
+  public_net:
   blackout_net:
-    driver: bridge                   # 컨테이너 간 내부 통신 전용 브릿지 네트워크
+    driver: bridge
