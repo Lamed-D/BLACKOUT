@@ -1,7 +1,7 @@
 # BLACKOUT 멀티엔진 웹해킹 실습 랩 (로컬 전용)
 
-`blackout_lab`(Flask 원본)의 UI/경험을 **계승**한 하나의 통합 모의해킹 실습 환경을,
-**백엔드 엔진별(PHP · Node.js · Django)**로 구현해 같은 취약점이 스택마다 어떻게 나타나는지 비교 학습합니다.
+`blackout_lab`(Flask 원본)의 UI/경험을 계승한 멀티엔진 커뮤니티입니다.
+PHP는 기존 실습 동작을 유지하고 Node.js는 안전한 일반 커뮤니티 앱 셸로 제공합니다.
 
 > ⚠️ 모든 엔진은 **의도적으로 취약**합니다. **로컬에서만** 구동하세요. cloudflared/터널은 포함하지 않습니다(필요 시 사용자가 직접 추가).
 
@@ -10,7 +10,7 @@
 | --- | --- | --- | --- |
 | 포털 | nginx 정적 | http://127.0.0.1:8090 | ✅ |
 | PHP 엔진 | PHP 8.4 + MariaDB | http://127.0.0.1:8101 | ✅ |
-| Node 엔진 | Express + EJS + MariaDB | http://127.0.0.1:8102 | 🚧 준비중 |
+| Node 엔진 | Express + EJS + MariaDB | http://127.0.0.1:8102 | ✅ 커뮤니티 앱 셸 |
 | Django 엔진 | Django 5 + PostgreSQL | http://127.0.0.1:8103 | 🚧 준비중 |
 
 ## 실행
@@ -33,6 +33,8 @@ docker compose -f labs/django/compose.yaml up -d --build   # Django :8103 (임�
 | alice | alice1234 | user |
 
 각 엔진은 상용 DB(MariaDB 등)를 컨테이너로 함께 기동하며(호스트 미노출), 부팅 시 스키마+시드를 자동 생성합니다(멱등).
+
+Node 엔진은 안전한 일반 커뮤니티 앱 셸입니다. 보안 실습 동작 연결은 별도 작업이며, 공유 카탈로그는 읽기 전용으로 표시합니다.
 
 ## 공유 자산 (`theme/`)
 - `theme/style.css` — 모든 엔진 공통 테마(blackout 계승)

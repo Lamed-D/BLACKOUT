@@ -19,6 +19,13 @@ services:
       DB_NAME: blackout
       DB_USER: blackout
       DB_PASSWORD: blackout_pass
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:-}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}
+      OAUTH_REDIRECT_BASE: ${OAUTH_REDIRECT_BASE:-http://127.0.0.1:8101}
     depends_on:
       php-db:
         condition: service_healthy
@@ -27,6 +34,36 @@ services:
     restart: unless-stopped
 
   php-db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: blackout
+      MARIADB_USER: blackout
+      MARIADB_PASSWORD: blackout_pass
+      MARIADB_ROOT_PASSWORD: root_pass
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  node:
+    build:
+      context: .
+      dockerfile: node/Dockerfile
+    environment:
+      DB_HOST: node-db
+      DB_NAME: blackout
+      DB_USER: blackout
+      DB_PASSWORD: blackout_pass
+    depends_on:
+      node-db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8102:3000"
+    restart: unless-stopped
+
+  node-db:
     image: mariadb:11
     environment:
       MARIADB_DATABASE: blackout

@@ -18,7 +18,7 @@ BLACKOUT은 회원·게시판·관리자 기능을 갖춘 커뮤니티를 토대
 docker compose -f labs/compose.yaml up -d --build
 ```
 - 포털: http://127.0.0.1:8090 → 엔진 선택
-- PHP 엔진: http://127.0.0.1:8101 (Node :8102 / Django :8103 준비중)
+- PHP 엔진: http://127.0.0.1:8101 · Node 엔진: http://127.0.0.1:8102 (Django :8103 준비중)
 - 시드 계정: `admin/admin123`, `testuser/testpass`, `alice/alice1234`
 - 자세한 내용: [`labs/README.md`](labs/README.md)
 

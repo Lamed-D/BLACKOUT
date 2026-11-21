@@ -1,0 +1,8 @@
+<%- include('header') %><div class="card mb-4"><div class="card-body p-4"><h1 class="h3 fw-bold"><%= user.name || user.username %></h1>
+<p class="text-secondary">@<%= user.username %> · 가입일 <%= new Date(user.created_at).toLocaleDateString('ko-KR') %></p>
+<p class="post-body"><%= user.bio || '소개가 없습니다.' %></p></div></div>
+<div class="row g-3 mb-4"><div class="col-sm-4"><div class="card"><div class="card-body"><span class="text-secondary">내 글</span><div class="fs-3 fw-bold"><%= posts %></div></div></div></div>
+<div class="col-sm-4"><div class="card"><div class="card-body"><span class="text-secondary">댓글</span><div class="fs-3 fw-bold"><%= comments %></div></div></div></div>
+<div class="col-sm-4"><div class="card"><div class="card-body"><span class="text-secondary">포인트</span><div class="fs-3 fw-bold"><%= user.points %></div></div></div></div></div>
+<div class="card"><div class="card-body p-4"><h2 class="h5 fw-bold">최근 작성한 글</h2><% if (!recent.length) { %><p class="text-secondary">아직 글이 없습니다.</p><% } %>
+<% for (const post of recent) { %><a class="d-block border-bottom py-2" href="/post/<%= post.id %>"><%= post.title %></a><% } %></div></div><%- include('footer') %>

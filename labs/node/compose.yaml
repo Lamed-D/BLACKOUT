@@ -1,0 +1,30 @@
+name: blackout_node
+services:
+  node:
+    build:
+      context: ..
+      dockerfile: node/Dockerfile
+    environment:
+      DB_HOST: db
+      DB_NAME: blackout
+      DB_USER: blackout
+      DB_PASSWORD: blackout_pass
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8102:3000"
+    restart: unless-stopped
+  db:
+    image: mariadb:11
+    environment:
+      MARIADB_DATABASE: blackout
+      MARIADB_USER: blackout
+      MARIADB_PASSWORD: blackout_pass
+      MARIADB_ROOT_PASSWORD: root_pass
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
