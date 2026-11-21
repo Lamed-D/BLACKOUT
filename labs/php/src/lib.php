@@ -44,6 +44,9 @@ function init_db(PDO $pdo): void {
             email VARCHAR(120), role VARCHAR(20) DEFAULT 'user', bio TEXT,
             points INT DEFAULT 1000, last_ip VARCHAR(50) DEFAULT '',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(500) NULL");
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20) NULL");
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255) NULL");
         $pdo->exec("CREATE TABLE IF NOT EXISTS posts (
             id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, content TEXT NOT NULL,
             author_id INT NOT NULL, author VARCHAR(80) NOT NULL, views INT DEFAULT 0, likes INT DEFAULT 0,
@@ -142,7 +145,7 @@ function layout_header(string $title = 'BLACKOUT'): void {
     echo '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">';
     echo '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">';
     echo '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">';
-    echo '<link rel="stylesheet" href="/style.css"></head><body>';
+    echo '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/community.css"><script src="/community.js" defer></script></head><body>';
     echo '<div class="bg-shape shape-a"></div><div class="bg-shape shape-b"></div>';
     echo '<nav class="navbar navbar-expand-lg custom-nav"><div class="container">';
     echo '<a class="navbar-brand" href="/"><i class="bi bi-shield-lock-fill" style="color:#2563eb"></i> BLACKOUT <span style="color:#2563eb">Security</span> Lab <span class="engine-badge engine-php ms-1">PHP</span></a>';
@@ -154,6 +157,7 @@ function layout_header(string $title = 'BLACKOUT'): void {
         echo '<a class="nav-link text-info fw-bold" href="/practice"><i class="bi bi-shield-x"></i> 실습실</a>';
         if ($admin) echo '<a class="nav-link text-danger fw-bold" href="/admin"><i class="bi bi-shield-lock-fill"></i> 관리자</a>';
         echo '<a class="nav-link" href="/profile?user_id=' . (int)$u['id'] . '"><i class="bi bi-person"></i> 프로필</a>';
+        echo '<a class="nav-link" href="/account"><i class="bi bi-bell"></i> 마이페이지</a>';
         echo '<a class="nav-link text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> 로그아웃</a>';
     } else {
         echo '<a class="nav-link text-info fw-bold" href="/practice"><i class="bi bi-shield-x"></i> 실습실</a>';
@@ -162,6 +166,7 @@ function layout_header(string $title = 'BLACKOUT'): void {
     }
     echo '</div></div></nav>';
     echo '<div class="container my-5" style="position:relative;z-index:1;"><div class="panel">';
+    if (!empty($_SESSION['oauth_message'])) { echo '<div class="alert alert-info" role="status">' . h($_SESSION['oauth_message']) . '</div>'; unset($_SESSION['oauth_message']); }
 }
 function layout_footer(): void {
     echo '</div></div><footer class="footer-custom py-4 text-center mt-5"><div class="container">';
