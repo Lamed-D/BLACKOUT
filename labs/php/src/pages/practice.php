@@ -37,6 +37,8 @@ function page_practice(): void {
         echo '<div id="v' . (int)$v['id'] . '" class="accordion-collapse collapse" data-bs-parent="#vulnAcc"><div class="accordion-body">';
         echo '<p><strong>목표:</strong> ' . h($v['goal']) . '</p>';
         echo '<p class="small text-secondary">OWASP: ' . h($v['owasp']) . ' · 경로: <code>' . h($v['route']) . '</code> · <a href="' . h($v['ref']) . '" target="_blank" rel="noopener">참고</a></p>';
+        if (!empty($v['detail'])) echo '<p>' . nl2br(h($v['detail'])) . '</p>';
+        if (!empty($v['diagram'])) echo '<pre class="d-block" style="color:#cbd5e1">' . h($v['diagram']) . '</pre>';
         foreach ($v['steps'] as $i => $s) {
             echo '<div class="alert alert-dark small mb-2"><b>STEP ' . ($i + 1) . '.</b> ' . h($s['desc']);
             if (!empty($s['payload'])) echo '<code class="d-block mt-2 text-warning">' . h($s['payload']) . '</code>';
