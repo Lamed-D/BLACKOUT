@@ -703,9 +703,14 @@ app.get('/exploit', (req, res) => {
   res.send(data);
 });
 
-// ── 사고들 (AI 공격 접근 기록) ──
+// ── 사고들 (AI 공격 접근 기록) — 이 엔진(node) 관련 항목만 ──
 app.get('/thoughts', (_req, res) => {
-  res.render('thoughts', {title: '사고들', approaches, user: res.locals.user, isAdmin: res.locals.isAdmin, notice: res.locals.notice});
+  const engine = 'node';
+  const groups = approaches.groups
+    .map(g => ({title: g.title, entries: g.entries.filter(e => (e.engines || []).includes(engine))}))
+    .filter(g => g.entries.length);
+  res.render('thoughts', {title: '사고들', engine, approaches: {intro: approaches.intro, groups},
+    user: res.locals.user, isAdmin: res.locals.isAdmin, notice: res.locals.notice});
 });
 
 // 404 / 오류 — [VULN] verbose 오류(스택) 노출
