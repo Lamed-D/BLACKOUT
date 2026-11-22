@@ -168,7 +168,14 @@ def practice(request):
 
 def thoughts(request):
     approaches = json.loads((DATA_DIR / "approaches.json").read_text(encoding="utf-8"))
-    return render(request, "thoughts.html", {"approaches": approaches})
+    engine = "django"
+    groups = []
+    for g in approaches["groups"]:
+        entries = [e for e in g["entries"] if engine in e.get("engines", [])]
+        if entries:
+            groups.append({"title": g["title"], "entries": entries})
+    return render(request, "thoughts.html",
+                  {"approaches": {"intro": approaches["intro"], "groups": groups}, "engine": engine})
 
 
 def exploit(request):
