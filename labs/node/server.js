@@ -18,6 +18,15 @@ const {createRouter: createOAuthRouter} = require('./oauth');
 const app = express();
 const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/vulns.json'), 'utf8'));
 const exploits = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/exploits.json'), 'utf8'));
+const applicability = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/applicability.json'), 'utf8'));
+function engineStatus(item, engine) {
+  const cfg = (applicability.engines || {})[engine] || {default: 'works'};
+  if (item.engine && item.engine !== 'all') return {status: 'works', reason: ''};
+  const ov = (cfg.overrides || {})[String(item.id)];
+  if (ov) return {status: ov.status, reason: ov.reason || ''};
+  const status = cfg.default || 'works';
+  return {status, reason: status === 'na' ? (cfg.defaultReason || '') : ''};
+}
 const approaches = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/approaches.json'), 'utf8'));
 const EXPLOIT_DIR = path.join(__dirname, 'data/exploits');
 const APP_DIR = __dirname;
@@ -715,7 +724,9 @@ app.get('/api/collect', (req, res) => {
 
 // ── 실습실 ──
 app.get('/practice', (_req, res) => {
-  const vulns = catalog.vulns.filter(item => !item.engine || item.engine === 'all' || item.engine === 'node');
+  const vulns = catalog.vulns
+    .filter(item => !item.engine || item.engine === 'all' || item.engine === 'node')
+    .map(item => { const s = engineStatus(item, 'node'); return {...item, _status: s.status, _reason: s.reason}; });
   res.render('practice', {title: '실습실', categories: catalog.categories, vulns, exploits: exploits.files,
     user: res.locals.user, isAdmin: res.locals.isAdmin, notice: res.locals.notice});
 });

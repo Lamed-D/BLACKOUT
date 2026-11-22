@@ -7,6 +7,7 @@ COPY node/views/ ./views/
 COPY theme/style.css ./public/style.css
 COPY theme/vulns.json ./data/vulns.json
 COPY theme/exploits.json ./data/exploits.json
+COPY theme/applicability.json ./data/applicability.json
 COPY theme/approaches.json ./data/approaches.json
 COPY theme/exploits/ ./data/exploits/
 EXPOSE 3000

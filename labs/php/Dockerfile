@@ -14,6 +14,7 @@ COPY php/src/ /var/www/html/
 COPY theme/style.css  /var/www/html/style.css
 COPY theme/vulns.json /var/www/html/vulns.json
 COPY theme/exploits.json /var/www/html/exploits.json
+COPY theme/applicability.json /var/www/html/applicability.json
 COPY theme/approaches.json /var/www/html/approaches.json
 COPY theme/exploits/ /var/www/html/exploit_files/
 COPY php/community.css /var/www/html/community.css

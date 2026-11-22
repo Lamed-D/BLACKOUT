@@ -11,18 +11,24 @@
 <a class="btn btn-sm btn-outline-secondary" href="/exploit?name=<%= f.name %>&raw=1" target="_blank">소스</a></div>
 </div></div><% } %></div></div></div>
 
-<div class="d-flex gap-2 flex-wrap mb-3" role="group"><button class="btn btn-primary btn-sm filter" data-cat="all">전체</button><% for (const category of categories.filter(item => item.key !== 'all')) { %><button class="btn btn-outline-primary btn-sm filter" data-cat="<%= category.key %>"><%= category.label %></button><% } %></div>
+<div class="d-flex gap-2 flex-wrap mb-2" role="group"><button class="btn btn-primary btn-sm filter" data-cat="all">전체</button><% for (const category of categories.filter(item => item.key !== 'all')) { %><button class="btn btn-outline-primary btn-sm filter" data-cat="<%= category.key %>"><%= category.label %></button><% } %></div>
+<div class="mb-3"><button id="worksOnly" class="btn btn-outline-success btn-sm">✓ 이 엔진에서 동작하는 것만</button> <span class="small text-secondary ms-1">끄면 미동작(안전)·부분 항목도 설명과 함께 보입니다.</span></div>
 
-<div class="accordion" id="practice-list"><% for (const item of vulns) { const files = exploits.filter(f => (f.items||[]).includes(item.id)); %>
-<div class="accordion-item practice-row" data-cat="<%= item.category %>"><h2 class="accordion-header"><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#v<%= item.id %>"><%= item.id %>. <%= item.title %> <span class="diff-badge diff-<%= item.difficulty %> ms-2"><%= item.difficulty %></span></button></h2>
+<% const SB = {works: ['success', '✓ 동작'], partial: ['warning', '△ 부분 동작'], na: ['secondary', '✕ 미동작(안전)']}; %>
+<div class="accordion" id="practice-list"><% for (const item of vulns) { const files = exploits.filter(f => (f.items||[]).includes(item.id)); const sb = SB[item._status] || SB.works; %>
+<div class="accordion-item practice-row" data-cat="<%= item.category %>" data-status="<%= item._status %>"><h2 class="accordion-header"><button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#v<%= item.id %>"><%= item.id %>. <%= item.title %> <span class="diff-badge diff-<%= item.difficulty %> ms-2"><%= item.difficulty %></span> <span class="badge text-bg-<%= sb[0] %> ms-2"><%= sb[1] %></span></button></h2>
 <div class="accordion-collapse collapse show" id="v<%= item.id %>"><div class="accordion-body">
+<% if (item._status !== 'works' && item._reason) { %><div class="alert alert-<%= item._status === 'na' ? 'secondary' : 'warning' %> mb-2"><b><%= item._status === 'na' ? '⛔ 이 엔진에서 동작하지 않습니다' : '△ 이 엔진에서는 부분만 동작합니다' %>:</b> <%= item._reason %></div><% } %>
 <p class="mb-1"><b>목표:</b> <%= item.goal %></p><% if (item.route) { %><p class="small mb-1"><b>경로:</b> <code><%= item.route %></code></p><% } %><% if (item.detail) { %><p class="text-secondary"><%= item.detail %></p><% } %><% if (item.diagram) { %><pre><%= item.diagram %></pre><% } %>
 <% for (const [index, step] of (item.steps || []).entries()) { %><div class="alert alert-dark mb-2"><b>STEP <%= index + 1 %>.</b> <%= step.desc %><% if (step.payload) { %><div class="d-flex align-items-start gap-2 mt-2"><code class="flex-grow-1 payload"><%= step.payload %></code><button type="button" class="btn btn-sm btn-outline-light copy-btn" title="복사">복사</button></div><% } %></div><% } %>
 <% if (files.length) { %><div class="mb-2"><b>예제 파일:</b> <% for (const f of files) { %><a class="badge text-bg-primary text-decoration-none" href="/exploit?name=<%= f.name %>"><i class="bi bi-download"></i> <%= f.name %></a> <a class="badge text-bg-secondary text-decoration-none" href="/exploit?name=<%= f.name %>&raw=1" target="_blank">소스</a> <% } %></div><% } %>
 <p class="mb-0"><b>대응책:</b> <%= item.fix %></p></div></div></div><% } %></div>
 
 <script>
-document.querySelectorAll('.filter').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.replace('btn-primary','btn-outline-primary'));button.classList.replace('btn-outline-primary','btn-primary');document.querySelectorAll('.practice-row').forEach(row=>row.hidden=button.dataset.cat!=='all'&&row.dataset.cat!==button.dataset.cat)}));
+let curCat='all', worksOnly=false;
+function applyFilters(){document.querySelectorAll('.practice-row').forEach(row=>{const catOk=curCat==='all'||row.dataset.cat===curCat;const stOk=!worksOnly||row.dataset.status==='works';row.hidden=!(catOk&&stOk);});}
+document.querySelectorAll('.filter').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(item=>item.classList.replace('btn-primary','btn-outline-primary'));button.classList.replace('btn-outline-primary','btn-primary');curCat=button.dataset.cat;applyFilters();}));
+document.getElementById('worksOnly').addEventListener('click',function(){worksOnly=!worksOnly;this.classList.toggle('btn-success',worksOnly);this.classList.toggle('btn-outline-success',!worksOnly);applyFilters();});
 document.querySelectorAll('.copy-btn').forEach(b=>b.addEventListener('click',()=>{const c=b.previousElementSibling.textContent;navigator.clipboard&&navigator.clipboard.writeText(c);b.textContent='복사됨';setTimeout(()=>b.textContent='복사',1200);}));
 </script>
 <%- include('footer') %>
