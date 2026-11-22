@@ -6,6 +6,9 @@ RUN docker-php-ext-install pdo_mysql \
  && a2enmod rewrite \
  && sed -ri 's/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
 
+# [VULN] 원격/래퍼 include 허용 — php://input, data:// 래퍼로 LFI→RCE (#51, 의도적 취약)
+RUN { echo 'allow_url_include = On'; echo 'allow_url_fopen = On'; } > /usr/local/etc/php/conf.d/lab-vuln.ini
+
 # 앱 소스 + 공유 테마 자산
 COPY php/src/ /var/www/html/
 COPY theme/style.css  /var/www/html/style.css

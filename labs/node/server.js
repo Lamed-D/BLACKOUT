@@ -668,6 +668,37 @@ app.post('/api/merge', (req, res) => {
     hint: leaked ? '프로토타입이 오염되었습니다!' : '{"__proto__":{"isAdmin":true}} 를 JSON 으로 전송해 보세요.'
   });
 });
+// [VULN] #49 ORDER BY 주입 — 정렬 파라미터를 쿼리에 직접 연결(ORDER BY 는 파라미터화 어려움)
+app.get('/leaderboard', async (req, res) => {
+  const sort = String(req.query.sort || 'points DESC');
+  const sql = `SELECT username, points FROM users ORDER BY ${sort}`;
+  try {
+    const [rows] = await pool.query(sql);
+    res.json({rows});
+  } catch (e) {
+    // [VULN] verbose 오류 — error-based 추출(extractvalue)로 버전/데이터 유출
+    res.status(500).json({error: e.message, query: sql});
+  }
+});
+
+// [VULN] #50 예측 가능한 비밀번호 재설정 토큰 — 약한 난수(사용자명 기반 상수 해시)
+app.all('/find_pw_weak', async (req, res) => {
+  const username = String(req.body.username || req.query.username || '');
+  if (!username) return res.type('html').send('<form method="post"><input name="username"><button>토큰 생성</button></form>');
+  // 토큰이 md5(username) 라서 공격자가 그대로 계산 가능
+  const token = crypto.createHash('md5').update(username).digest('hex');
+  res.type('text/plain').send(`재설정 링크:\nhttp://${req.headers.host}/reset_pw?user=${username}&token=${token}\n(토큰 = md5(username) — 예측 가능)`);
+});
+
+// [VULN] #52 프로토타입 오염 영향 사슬 — 오염된 Object.prototype.isAdmin 을 권한 판단에 사용
+app.get('/api/account', (_req, res) => {
+  const session = {}; // 평범한 빈 객체
+  // 어디선가 /api/merge 로 프로토타입이 오염됐다면 session.isAdmin 이 상속으로 true 가 된다
+  const isAdmin = session.isAdmin === true;
+  res.json({user: 'guest', isAdmin, flag: isAdmin ? flag('proto_privesc_chain') : null,
+    hint: isAdmin ? '프로토타입 오염으로 guest 가 admin 권한을 얻음' : '먼저 POST /api/merge {"__proto__":{"isAdmin":true}} 로 오염시키세요.'});
+});
+
 // [VULN] ReDoS (Node 전용) — 치명적 백트래킹 정규식을 사용자 입력에 적용 → 이벤트 루프 블로킹
 app.get('/api/validate', (req, res) => {
   const value = String(req.query.value || '').slice(0, 100);
