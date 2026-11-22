@@ -668,6 +668,15 @@ app.post('/api/merge', (req, res) => {
     hint: leaked ? '프로토타입이 오염되었습니다!' : '{"__proto__":{"isAdmin":true}} 를 JSON 으로 전송해 보세요.'
   });
 });
+// [VULN] ReDoS (Node 전용) — 치명적 백트래킹 정규식을 사용자 입력에 적용 → 이벤트 루프 블로킹
+app.get('/api/validate', (req, res) => {
+  const value = String(req.query.value || '').slice(0, 100);
+  const re = /^(a+)+$/; // 취약한 패턴
+  const t = Date.now();
+  const matched = re.test(value);
+  res.json({matched, elapsed_ms: Date.now() - t,
+    hint: 'value 앞에 a 를 늘리고 끝에 "!" 를 붙이면 elapsed_ms 가 폭증한다(이벤트 루프 블로킹).'});
+});
 app.get('/api/collect', (req, res) => {
   try { fs.appendFileSync('/tmp/collected.log', new Date().toISOString() + ' ' + String(req.query.c || '') + '\n'); } catch { /* ignore */ }
   res.json({ok: true});

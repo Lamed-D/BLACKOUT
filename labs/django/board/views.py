@@ -10,6 +10,7 @@ from django.forms import modelform_factory
 from django.http import FileResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.utils import timezone
 
@@ -188,6 +189,56 @@ def exploit(request):
     if not request.GET.get("raw"):
         resp["Content-Disposition"] = f'attachment; filename="{name}"'
     return resp
+
+
+# ============================================================
+# Django 전용 취약점 — 의도적 결함(로컬 전용). 안전한 커뮤니티 CRUD 와 분리.
+# ============================================================
+def render_template(request):
+    # [VULN] SSTI — 사용자 입력을 Django Template 로 렌더 + settings 를 컨텍스트에 노출
+    from django.template import Template, Context
+    from django.conf import settings as dj_settings
+    from django.http import HttpResponse
+    tpl = request.GET.get("tpl", "")
+    if not tpl:
+        return HttpResponse("usage: /render?tpl={{ settings.SECRET_KEY }}", content_type="text/plain; charset=utf-8")
+    try:
+        out = Template(tpl).render(Context({"settings": dj_settings, "request": request, "user": request.user}))
+    except Exception as exc:  # noqa: BLE001
+        out = f"[template error] {exc}"
+    return HttpResponse(out, content_type="text/plain; charset=utf-8")
+
+
+def search_raw(request):
+    # [VULN] SQL Injection — .raw() 에 문자열을 직접 포매팅
+    from django.contrib.auth import get_user_model
+    from django.http import HttpResponse
+    q = request.GET.get("q", "")
+    # [VULN] 문자열 직접 연결(= 비교). psycopg 가 리터럴 %% 를 플레이스홀더로 보므로 LIKE 대신 = 사용.
+    sql = "SELECT id, username, email FROM auth_user WHERE username = '" + q + "'"
+    try:
+        rows = list(get_user_model().objects.raw(sql))
+        body = "id\tusername\temail(또는 UNION 주입 컬럼)\n" + "\n".join(
+            f"{u.id}\t{u.username}\t{u.email}" for u in rows)
+    except Exception as exc:  # noqa: BLE001  — [VULN] verbose 오류(쿼리 노출)
+        body = f"[sql error] {exc}\nquery: {sql}"
+    return HttpResponse(body or "(no results)", content_type="text/plain; charset=utf-8")
+
+
+@csrf_exempt
+def api_load(request):
+    # [VULN] 안전하지 않은 역직렬화 — 신뢰 불가 base64(pickle) 복원 → RCE
+    import base64
+    import pickle
+    from django.http import HttpResponse
+    data = request.POST.get("data", "") or request.body.decode("utf-8", "ignore")
+    if not data:
+        return HttpResponse("no data", status=400)
+    try:
+        obj = pickle.loads(base64.b64decode(data))
+        return HttpResponse(f"loaded: {obj!r}", content_type="text/plain; charset=utf-8")
+    except Exception as exc:  # noqa: BLE001
+        return HttpResponse(f"[deser] {exc}", content_type="text/plain; charset=utf-8")
 
 
 def style(request):

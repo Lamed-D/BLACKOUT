@@ -150,3 +150,8 @@ code.d-block.text-info     { color:#67e8f9 !important; }
 /* ── Portal engine cards ── */
 .engine-card { transition:transform .15s, box-shadow .15s; }
 .engine-card:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+
+/* 실습 가이드 페이로드 — 밝은 배경에서도 또렷하게(다크 코드 칩) */
+.payload{display:block;background:#0f172a;color:#f1f5f9;padding:.45rem .6rem;border-radius:.4rem;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85rem;line-height:1.5}
+.accordion-body code{white-space:pre-wrap;word-break:break-word}
+.accordion-body .alert-dark{background:#1e293b;color:#e2e8f0;border-color:#334155}

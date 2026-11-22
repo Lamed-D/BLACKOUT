@@ -53,7 +53,7 @@ function page_practice(): void {
         if (!empty($v['diagram'])) echo '<pre class="d-block" style="color:#cbd5e1">' . h($v['diagram']) . '</pre>';
         foreach ($v['steps'] as $i => $s) {
             echo '<div class="alert alert-dark small mb-2"><b>STEP ' . ($i + 1) . '.</b> ' . h($s['desc']);
-            if (!empty($s['payload'])) echo '<div class="d-flex align-items-start gap-2 mt-2"><code class="flex-grow-1 text-warning payload">' . h($s['payload']) . '</code><button type="button" class="btn btn-sm btn-outline-light copy-btn">복사</button></div>';
+            if (!empty($s['payload'])) echo '<div class="d-flex align-items-start gap-2 mt-2"><code class="flex-grow-1 payload">' . h($s['payload']) . '</code><button type="button" class="btn btn-sm btn-outline-secondary copy-btn">복사</button></div>';
             echo '</div>';
         }
         $vid = (int)$v['id'];
