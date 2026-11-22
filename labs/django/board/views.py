@@ -152,11 +152,42 @@ def notice_detail(request, pk):
     return render(request, "notice.html", {"notice": notice})
 
 
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+
+
 def practice(request):
-    catalog = json.loads((Path(__file__).resolve().parent.parent / "data" / "vulns.json").read_text(encoding="utf-8"))
+    catalog = json.loads((DATA_DIR / "vulns.json").read_text(encoding="utf-8"))
     vulns = [item for item in catalog["vulns"]
              if item.get("engine", "all") in ("all", "django")]
-    return render(request, "practice.html", {"categories": catalog["categories"], "vulns": vulns})
+    exfiles = json.loads((DATA_DIR / "exploits.json").read_text(encoding="utf-8")).get("files", [])
+    for v in vulns:
+        v["files"] = [f for f in exfiles if v["id"] in f.get("items", [])]
+    return render(request, "practice.html", {"categories": catalog["categories"], "vulns": vulns, "exfiles": exfiles})
+
+
+def thoughts(request):
+    approaches = json.loads((DATA_DIR / "approaches.json").read_text(encoding="utf-8"))
+    return render(request, "thoughts.html", {"approaches": approaches})
+
+
+def exploit(request):
+    import base64
+    from django.http import HttpResponse, HttpResponseNotFound
+    name = Path(request.GET.get("name", "")).name
+    files = json.loads((DATA_DIR / "exploits.json").read_text(encoding="utf-8")).get("files", [])
+    meta = next((f for f in files if f.get("name") == name), None)
+    if not meta:
+        return HttpResponseNotFound("예제 파일을 찾을 수 없습니다.")
+    store = meta.get("store", name)
+    target = DATA_DIR / "exploits" / Path(store).name
+    if not target.is_file():
+        return HttpResponseNotFound("예제 파일을 찾을 수 없습니다.")
+    raw = target.read_text(encoding="utf-8")
+    data = base64.b64decode(raw) if meta.get("encoded") else raw.encode()
+    resp = HttpResponse(data, content_type="text/plain; charset=utf-8")
+    if not request.GET.get("raw"):
+        resp["Content-Disposition"] = f'attachment; filename="{name}"'
+    return resp
 
 
 def style(request):

@@ -9,7 +9,7 @@
 <nav class="navbar navbar-expand-lg custom-nav"><div class="container">
 <a class="navbar-brand" href="/"><i class="bi bi-shield-lock-fill text-primary"></i> BLACKOUT <span class="text-primary">Security</span> Lab <span class="engine-badge engine-django">Django</span></a>
 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav" aria-controls="main-nav" aria-expanded="false" aria-label="메뉴 열기"><span class="navbar-toggler-icon"></span></button>
-<div class="collapse navbar-collapse" id="main-nav"><div class="navbar-nav ms-auto align-items-lg-center"><a class="nav-link" href="/">게시판</a><a class="nav-link" href="/shop">상점</a><a class="nav-link" href="/practice">실습실</a>
+<div class="collapse navbar-collapse" id="main-nav"><div class="navbar-nav ms-auto align-items-lg-center"><a class="nav-link" href="/">게시판</a><a class="nav-link" href="/shop">상점</a><a class="nav-link" href="/practice">실습실</a><a class="nav-link" href="/thoughts">사고들</a>
 {% if user.is_authenticated %}<a class="nav-link" href="/profile">{{ user.username }}</a>{% if user.is_staff %}<a class="nav-link" href="/admin">관리자</a>{% endif %}
 <form action="/logout" method="post">{% csrf_token %}<button class="btn btn-link nav-link">로그아웃</button></form>
 {% else %}<a class="nav-link" href="/login">로그인</a><a class="nav-link" href="/register">회원가입</a>{% endif %}
