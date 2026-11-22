@@ -1,6 +1,8 @@
-# BLACKOUT Node 커뮤니티
+# BLACKOUT Node 커뮤니티 (취약 실습 엔진)
 
-Express + EJS + MariaDB로 만든 로컬 커뮤니티 앱 셸입니다. 의도적 취약점 연결은 이 앱의 범위 밖이며, 실습실은 공유 카탈로그를 읽어 표시합니다.
+Express + EJS + MariaDB로 만든 **의도적으로 취약한** 로컬 커뮤니티 앱입니다. PHP 엔진과 동등하게 공유 카탈로그(`theme/vulns.json`)의 Node 노출 40종 취약점이 실제로 동작하며, 실습실(`/practice`)에서 각 항목의 목표·단계·페이로드·대응책을 확인할 수 있습니다.
+
+> ⚠️ 모든 취약점은 학습 목적의 의도적 결함입니다. **로컬에서만** 구동하세요(터널 금지).
 
 ## 실행
 
@@ -21,8 +23,18 @@ docker compose -f labs/node/compose.yaml up -d --build
 2. 최신 글 목록에서 글을 열고 댓글과 좋아요를 남깁니다. 글쓰기는 로그인 후 사용할 수 있습니다.
 3. 마이페이지에서 활동과 포인트를 확인하고, 상점에서 포인트로 상품을 구매합니다.
 4. 관리자 계정은 회원 목록을 보고 공지를 작성할 수 있습니다.
-5. 실습실은 `theme/vulns.json` 중 공통과 Node 항목을 표시합니다. 카탈로그 내용은 변경하지 않습니다.
+5. 실습실은 `theme/vulns.json` 중 공통과 Node 항목(40종)을 표시합니다. 카탈로그 내용은 변경하지 않습니다.
 6. 로그인 화면의 **간편 로그인(Google/Kakao/Naver SSO)** 으로 소셜 계정 로그인이 가능합니다.
+
+## 취약점 표면(요약)
+
+SQLi(인증우회·UNION·스키마열거·블라인드), XSS(반사·저장·DOM·UA저장형), 약한 MD5 해시, JWT 약한시크릿·alg=none,
+쿠키 권한상승, 세션 고정, 사용자 열거, Mass Assignment, IDOR, 수평/수직 권한상승, 오픈 리다이렉트, Host 헤더 인젝션,
+무제한 업로드(HTML/SVG 저장형 XSS), 경로 탐색/LFI, OS 명령주입, SSRF, XXE, 안전하지 않은 역직렬화, SSTI, CORS,
+상점 가격/수량 조작, 경쟁 조건, 클릭재킹, 보안헤더 누락, 디버그 노출, CSV 수식 인젝션, **프로토타입 오염(Node 전용)**.
+
+- 취약 로직은 `server.js`, 약한 JWT는 `jwt.js`, 고급(XXE/역직렬화/프로토타입오염/SSTI)은 `advuln.js`.
+- 각 항목의 공격 경로/페이로드는 `/practice` 참고.
 
 ## 소셜 로그인(SSO)
 
@@ -46,12 +58,12 @@ docker compose -f labs/node/compose.yaml up -d --build
 labs/node/
 ├─ compose.yaml       Node와 내부 MariaDB
 ├─ Dockerfile         labs/를 빌드 컨텍스트로 사용
-├─ db.js              스키마·시드와 DB 연결(SSO 컬럼 포함)
+├─ db.js              스키마·시드(약한 MD5)와 DB 연결(SSO 컬럼 포함)
+├─ jwt.js             약한 JWT(시크릿='secret', alg=none 허용)
+├─ advuln.js          XXE·역직렬화·프로토타입오염·SSTI 헬퍼
 ├─ oauth.js           Google/Kakao/Naver SSO 라우터
-├─ server.js          라우트와 세션
-└─ views/             EJS 화면
-    ├─ header.ejs     공통 네비게이션·테마
-    └─ *.ejs          게시판·계정·상점·관리자·실습실
+├─ server.js          취약 라우트·세션·업로드
+└─ views/             EJS 화면(header/footer/page/message/practice)
 ```
 
 `/style.css`는 빌드할 때 `labs/theme/style.css`를 그대로 복사합니다.

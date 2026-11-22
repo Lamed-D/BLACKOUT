@@ -11,19 +11,13 @@ const pool = mysql.createPool({
   connectionLimit: 10
 });
 
+// [VULN] 약한 비밀번호 해시 — 솔트 없는 MD5 (PHP 엔진과 동일, 의도적 취약)
 function hashPassword(password) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-  return `scrypt:${salt}:${hash}`;
+  return crypto.createHash('md5').update(String(password)).digest('hex');
 }
 
 function checkPassword(password, stored) {
-  const parts = String(stored).split(':');
-  if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
-  const expected = Buffer.from(parts[2], 'hex');
-  if (expected.length !== 64) return false;
-  const actual = crypto.scryptSync(password, parts[1], 64);
-  return crypto.timingSafeEqual(expected, actual);
+  return hashPassword(password) === String(stored);
 }
 
 async function initialize() {
@@ -103,6 +97,15 @@ async function initialize() {
       ];
       for (const row of seedPosts)
         await connection.execute('INSERT INTO posts (title,content,author_id,author) VALUES (?,?,?,?)', row);
+      const samples = ['환경 세팅 질문', 'XSS 필터 우회 팁', '파일 업로드 취약점 정리', 'JWT 디버깅 노트',
+        'SSRF 사례 공유', '관리자 페이지 접근 실습', '명령 주입 체크리스트', '역직렬화 입문',
+        'CORS 오설정 확인법', '비밀번호 재설정 흐름', 'IDOR 찾는 법', '세션 관리 베스트프랙티스'];
+      for (let i = 0; i < samples.length; i++)
+        await connection.execute('INSERT INTO posts (title,content,author_id,author) VALUES (?,?,?,?)',
+          [samples[i], '실습 메모 #' + (i + 1) + ' — 자유롭게 토론해요.', i % 2 ? 3 : 2, i % 2 ? 'alice' : 'testuser']);
+      await connection.execute(
+        'INSERT INTO login_logs (user_id,username,ip_address,user_agent) VALUES (?,?,?,?)',
+        [1, 'admin', '127.0.0.1', 'Mozilla/5.0 (관리자 콘솔)']);
       await connection.execute('INSERT INTO comments (post_id,author_id,author,content) VALUES (?,?,?,?)',
         [1, 3, 'alice', '환영합니다! 함께 공부해요 :)']);
       await connection.execute('INSERT INTO comments (post_id,author_id,author,content) VALUES (?,?,?,?)',
