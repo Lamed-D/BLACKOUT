@@ -161,8 +161,20 @@ def practice(request):
     vulns = [item for item in catalog["vulns"]
              if item.get("engine", "all") in ("all", "django")]
     exfiles = json.loads((DATA_DIR / "exploits.json").read_text(encoding="utf-8")).get("files", [])
+    cfg = json.loads((DATA_DIR / "applicability.json").read_text(encoding="utf-8")).get("engines", {}).get("django", {"default": "works"})
+
+    def status_of(v):
+        if v.get("engine", "all") != "all":
+            return "works", ""
+        ov = cfg.get("overrides", {}).get(str(v["id"]))
+        if ov:
+            return ov["status"], ov.get("reason", "")
+        st = cfg.get("default", "works")
+        return st, (cfg.get("defaultReason", "") if st == "na" else "")
+
     for v in vulns:
         v["files"] = [f for f in exfiles if v["id"] in f.get("items", [])]
+        v["status"], v["reason"] = status_of(v)
     return render(request, "practice.html", {"categories": catalog["categories"], "vulns": vulns, "exfiles": exfiles})
 
 
