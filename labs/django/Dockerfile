@@ -5,4 +5,7 @@ ENV PYTHONPATH=/app DJANGO_SETTINGS_MODULE=settings PYTHONUNBUFFERED=1
 COPY django/ ./
 COPY theme/style.css ./public/style.css
 COPY theme/vulns.json ./data/vulns.json
+COPY theme/exploits.json ./data/exploits.json
+COPY theme/approaches.json ./data/approaches.json
+COPY theme/exploits/ ./data/exploits/
 CMD ["sh","-ec","umask 077; python -c 'import secrets; print(secrets.token_urlsafe(64))' > /tmp/blackout-django-secret; django-admin migrate --noinput; django-admin seed_community; exec gunicorn --bind 0.0.0.0:8000 --access-logfile - wsgi:application"]

@@ -155,12 +155,14 @@ function layout_header(string $title = 'BLACKOUT'): void {
         echo '<a class="nav-link text-warning" href="/post/write"><i class="bi bi-pencil-square"></i> 글쓰기</a>';
         echo '<a class="nav-link text-success" href="/shop"><i class="bi bi-bag"></i> 상점</a>';
         echo '<a class="nav-link text-info fw-bold" href="/practice"><i class="bi bi-shield-x"></i> 실습실</a>';
+        echo '<a class="nav-link text-warning fw-bold" href="/thoughts"><i class="bi bi-lightbulb"></i> 사고들</a>';
         if ($admin) echo '<a class="nav-link text-danger fw-bold" href="/admin"><i class="bi bi-shield-lock-fill"></i> 관리자</a>';
         echo '<a class="nav-link" href="/profile?user_id=' . (int)$u['id'] . '"><i class="bi bi-person"></i> 프로필</a>';
         echo '<a class="nav-link" href="/account"><i class="bi bi-bell"></i> 마이페이지</a>';
         echo '<a class="nav-link text-danger" href="/logout"><i class="bi bi-box-arrow-right"></i> 로그아웃</a>';
     } else {
         echo '<a class="nav-link text-info fw-bold" href="/practice"><i class="bi bi-shield-x"></i> 실습실</a>';
+        echo '<a class="nav-link text-warning fw-bold" href="/thoughts"><i class="bi bi-lightbulb"></i> 사고들</a>';
         echo '<a class="nav-link text-success fw-bold" href="/login"><i class="bi bi-box-arrow-in-right"></i> 로그인</a>';
         echo '<a class="nav-link" href="/register"><i class="bi bi-person-plus"></i> 회원가입</a>';
     }

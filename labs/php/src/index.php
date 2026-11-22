@@ -14,6 +14,7 @@ require_once __DIR__ . '/pages/api.php';
 require_once __DIR__ . '/pages/phpvuln.php';
 require_once __DIR__ . '/pages/oauth.php';
 require_once __DIR__ . '/pages/community.php';
+require_once __DIR__ . '/pages/writeups.php';
 
 db(); // 최초 요청 시 스키마/시드 보장
 
@@ -71,6 +72,8 @@ switch (true) {
     case $path === '/admin/notice/create': page_admin_notice_create(); break;
 
     case $path === '/practice':         page_practice(); break;
+    case $path === '/thoughts':         page_thoughts(); break;
+    case $path === '/exploit':          page_exploit(); break;
 
     default:
         http_response_code(404);

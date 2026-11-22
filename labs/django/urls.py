@@ -24,5 +24,7 @@ urlpatterns = [
     path("admin/notice", views.create_notice),
     path("notice/<int:pk>", views.notice_detail),
     path("practice", views.practice),
+    path("thoughts", views.thoughts),
+    path("exploit", views.exploit),
     path("style.css", views.style),
 ]

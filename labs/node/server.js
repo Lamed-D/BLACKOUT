@@ -17,6 +17,9 @@ const {createRouter: createOAuthRouter} = require('./oauth');
 
 const app = express();
 const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/vulns.json'), 'utf8'));
+const exploits = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/exploits.json'), 'utf8'));
+const approaches = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/approaches.json'), 'utf8'));
+const EXPLOIT_DIR = path.join(__dirname, 'data/exploits');
 const APP_DIR = __dirname;
 const UPLOAD_DIR = path.join(APP_DIR, 'uploads');
 fs.mkdirSync(UPLOAD_DIR, {recursive: true});
@@ -673,7 +676,27 @@ app.get('/api/collect', (req, res) => {
 // ── 실습실 ──
 app.get('/practice', (_req, res) => {
   const vulns = catalog.vulns.filter(item => !item.engine || item.engine === 'all' || item.engine === 'node');
-  res.render('practice', {title: '실습실', categories: catalog.categories, vulns, user: res.locals.user, isAdmin: res.locals.isAdmin, notice: res.locals.notice});
+  res.render('practice', {title: '실습실', categories: catalog.categories, vulns, exploits: exploits.files,
+    user: res.locals.user, isAdmin: res.locals.isAdmin, notice: res.locals.notice});
+});
+
+// ── 예제 공격 파일 다운로드/소스 (?raw=1 은 인라인 표시) ──
+app.get('/exploit', (req, res) => {
+  const name = path.basename(String(req.query.name || ''));
+  const meta = exploits.files.find(x => x.name === name);
+  if (!meta) return res.status(404).send('예제 파일을 찾을 수 없습니다.');
+  const target = path.join(EXPLOIT_DIR, meta.store || name);
+  if (!fs.existsSync(target)) return res.status(404).send('예제 파일을 찾을 수 없습니다.');
+  // 일부 파일은 호스트 보안 오탐 방지를 위해 .b64 로 저장 → 서빙 시 원본으로 복원
+  const data = meta.encoded ? Buffer.from(fs.readFileSync(target, 'utf8'), 'base64') : fs.readFileSync(target);
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  if (!req.query.raw) res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  res.send(data);
+});
+
+// ── 사고들 (AI 공격 접근 기록) ──
+app.get('/thoughts', (_req, res) => {
+  res.render('thoughts', {title: '사고들', approaches, user: res.locals.user, isAdmin: res.locals.isAdmin, notice: res.locals.notice});
 });
 
 // 404 / 오류 — [VULN] verbose 오류(스택) 노출

