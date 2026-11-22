@@ -1,3 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ title }}{% endblock %}
-{% block content %}<div class="card mx-auto" style="max-width:650px"><div class="card-body p-4"><h1 class="h4 fw-bold mb-3">{{ title }}</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">{{ title }}</button></form></div></div>{% endblock %}
+{% block content %}<div class="card mx-auto" style="max-width:650px"><div class="card-body p-4"><h1 class="h4 fw-bold mb-3">{{ title }}</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary">{{ title }}</button></form>
+{% if show_sso %}<div class="sso-options mt-4"><p class="small text-secondary text-center mb-2">간편 로그인</p>
+<a class="sso-button sso-google" href="/oauth/google/login">Google</a>
+<a class="sso-button sso-kakao" href="/oauth/kakao/login">Kakao</a>
+<a class="sso-button sso-naver" href="/oauth/naver/login">Naver</a></div>
+<style>.sso-options{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}.sso-options p{grid-column:1/-1}.sso-button{display:block;border-radius:.5rem;padding:.6rem .2rem;text-align:center;text-decoration:none;font-weight:700;font-size:.85rem}.sso-google{color:#174ea6;background:#e8f0fe}.sso-kakao{color:#191919;background:#fee500}.sso-naver{color:#fff;background:#03c75a}@media(max-width:640px){.sso-options{grid-template-columns:1fr}}</style>{% endif %}
+</div></div>{% endblock %}

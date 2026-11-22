@@ -2,11 +2,15 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import path
 
 from board import views
+from board import oauth
 
 urlpatterns = [
     path("", views.index),
     path("register", views.register),
-    path("login", LoginView.as_view(template_name="form.html", extra_context={"title": "로그인"}), name="login"),
+    path("login", LoginView.as_view(template_name="form.html",
+                                     extra_context={"title": "로그인", "show_sso": True}), name="login"),
+    path("oauth/<slug:provider>/login", oauth.oauth_login),
+    path("oauth/<slug:provider>/callback", oauth.oauth_callback),
     path("logout", LogoutView.as_view()),
     path("post/write", views.write),
     path("post/<int:pk>", views.detail, name="detail"),
