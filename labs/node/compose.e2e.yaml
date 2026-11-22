@@ -1,0 +1,30 @@
+# OAuth E2E 오버레이 — 로컬 Mock IdP로 code→token→profile→세션 전 구간을 실제로 돈다.
+# 사용: docker compose -f labs/node/compose.yaml -f labs/node/compose.e2e.yaml up -d --build
+# authorize URL = 호스트에서 접근(브라우저가 따라감), token/profile = 컨테이너 내부(서버가 호출).
+services:
+  node:
+    environment:
+      GOOGLE_CLIENT_ID: mock-google-id
+      GOOGLE_CLIENT_SECRET: mock-google-secret
+      GOOGLE_AUTHORIZE_URL: http://127.0.0.1:9100/google/authorize
+      GOOGLE_TOKEN_URL: http://mock:9000/google/token
+      GOOGLE_PROFILE_URL: http://mock:9000/google/userinfo
+      KAKAO_CLIENT_ID: mock-kakao-id
+      KAKAO_CLIENT_SECRET: mock-kakao-secret
+      KAKAO_AUTHORIZE_URL: http://127.0.0.1:9100/kakao/authorize
+      KAKAO_TOKEN_URL: http://mock:9000/kakao/token
+      KAKAO_PROFILE_URL: http://mock:9000/kakao/userinfo
+      NAVER_CLIENT_ID: mock-naver-id
+      NAVER_CLIENT_SECRET: mock-naver-secret
+      NAVER_AUTHORIZE_URL: http://127.0.0.1:9100/naver/authorize
+      NAVER_TOKEN_URL: http://mock:9000/naver/token
+      NAVER_PROFILE_URL: http://mock:9000/naver/userinfo
+    depends_on:
+      mock:
+        condition: service_started
+  mock:
+    build:
+      context: ./mock-oauth
+    ports:
+      - "127.0.0.1:9100:9000"
+    restart: unless-stopped

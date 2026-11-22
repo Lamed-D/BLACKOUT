@@ -30,10 +30,15 @@ const PROVIDERS = {
 function config(provider) {
   const base = PROVIDERS[provider];
   if (!base) return null;
+  const p = base.prefix;
+  // 엔드포인트는 환경변수로 덮어쓸 수 있다(로컬 Mock IdP·자체호스팅 테스트용). 미설정 시 실제 공급자 URL.
   return {
     ...base,
-    id: process.env[base.prefix + '_CLIENT_ID'] || '',
-    secret: process.env[base.prefix + '_CLIENT_SECRET'] || '',
+    id: process.env[p + '_CLIENT_ID'] || '',
+    secret: process.env[p + '_CLIENT_SECRET'] || '',
+    authorize: process.env[p + '_AUTHORIZE_URL'] || base.authorize,
+    token: process.env[p + '_TOKEN_URL'] || base.token,
+    profile: process.env[p + '_PROFILE_URL'] || base.profile,
   };
 }
 

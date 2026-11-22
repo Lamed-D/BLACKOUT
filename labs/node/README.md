@@ -51,6 +51,20 @@ SQLi(인증우회·UNION·스키마열거·블라인드), XSS(반사·저장·DO
 - 키가 없으면 버튼을 눌러도 안내 후 로그인 화면으로 돌아오며, 로컬 로그인에는 영향이 없습니다.
 - CSRF 방지를 위해 `state` 파라미터를 세션에 저장·검증하고, 로그인 성공 시 세션을 재생성합니다.
 - 공급자 ID(`oauth_provider`+`oauth_id`)와 **검증된 이메일**로만 기존 계정을 연결합니다(Naver는 검증 이메일 미표시로 매칭 제외).
+- 엔드포인트는 `<PREFIX>_AUTHORIZE_URL`/`_TOKEN_URL`/`_PROFILE_URL` 환경변수로 덮어쓸 수 있습니다(미설정 시 실제 공급자 URL). 자체호스팅·로컬 테스트용.
+
+### E2E (로컬 Mock IdP)
+
+실제 공급자 키 없이 `code→token→profile→세션` 전 구간을 돌려볼 수 있는 Mock OAuth 공급자(`mock-oauth/`, 의존성 없음)를 제공합니다.
+
+```sh
+docker compose -f labs/node/compose.yaml -f labs/node/compose.e2e.yaml up -d --build
+# 브라우저(또는 curl -L)로 http://127.0.0.1:8102/oauth/google/login 접속 → 콜백까지 왕복 후 로그인됨
+docker compose -f labs/node/compose.yaml -f labs/node/compose.e2e.yaml down   # 정리
+```
+
+- `authorize` URL은 호스트에서 접근(브라우저가 따라감), `token`/`profile` URL은 컨테이너 내부(`mock:9000`)로 분리.
+- google/kakao/naver 세 공급자 형태를 모두 모방하므로 공급자별 프로필 파싱까지 검증됩니다.
 
 ## 구조
 
