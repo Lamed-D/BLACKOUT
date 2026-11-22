@@ -22,6 +22,23 @@ docker compose -f labs/node/compose.yaml up -d --build
 3. 마이페이지에서 활동과 포인트를 확인하고, 상점에서 포인트로 상품을 구매합니다.
 4. 관리자 계정은 회원 목록을 보고 공지를 작성할 수 있습니다.
 5. 실습실은 `theme/vulns.json` 중 공통과 Node 항목을 표시합니다. 카탈로그 내용은 변경하지 않습니다.
+6. 로그인 화면의 **간편 로그인(Google/Kakao/Naver SSO)** 으로 소셜 계정 로그인이 가능합니다.
+
+## 소셜 로그인(SSO)
+
+상용 웹처럼 OAuth 2.0 기반의 소셜 로그인을 지원합니다(PHP 엔진과 동일한 흐름). 공급자 키는 환경변수로 주입합니다.
+
+| 환경변수 | 설명 |
+| --- | --- |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth 클라이언트 |
+| `KAKAO_CLIENT_ID` / `KAKAO_CLIENT_SECRET` | Kakao OAuth 클라이언트 |
+| `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET` | Naver OAuth 클라이언트 |
+| `NODE_OAUTH_REDIRECT_BASE` | 콜백 베이스 URL(기본 `http://127.0.0.1:8102`) |
+
+- 콜백 경로: `/oauth/{google|kakao|naver}/callback`
+- 키가 없으면 버튼을 눌러도 안내 후 로그인 화면으로 돌아오며, 로컬 로그인에는 영향이 없습니다.
+- CSRF 방지를 위해 `state` 파라미터를 세션에 저장·검증하고, 로그인 성공 시 세션을 재생성합니다.
+- 공급자 ID(`oauth_provider`+`oauth_id`)와 **검증된 이메일**로만 기존 계정을 연결합니다(Naver는 검증 이메일 미표시로 매칭 제외).
 
 ## 구조
 
@@ -29,7 +46,8 @@ docker compose -f labs/node/compose.yaml up -d --build
 labs/node/
 ├─ compose.yaml       Node와 내부 MariaDB
 ├─ Dockerfile         labs/를 빌드 컨텍스트로 사용
-├─ db.js              스키마·시드와 DB 연결
+├─ db.js              스키마·시드와 DB 연결(SSO 컬럼 포함)
+├─ oauth.js           Google/Kakao/Naver SSO 라우터
 ├─ server.js          라우트와 세션
 └─ views/             EJS 화면
     ├─ header.ejs     공통 네비게이션·테마
