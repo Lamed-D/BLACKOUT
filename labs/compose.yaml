@@ -91,6 +91,13 @@ services:
     environment:
       POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD:-django-lab}
       DB_HOST: django-db
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:-}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}
+      OAUTH_REDIRECT_BASE: ${DJANGO_OAUTH_REDIRECT_BASE:-http://127.0.0.1:8103}
     depends_on:
       django-db:
         condition: service_healthy

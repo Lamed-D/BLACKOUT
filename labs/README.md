@@ -11,7 +11,7 @@ PHP·Node 엔진은 공유 카탈로그의 취약점이 실제로 동작하는 �
 | 포털 | nginx 정적 | http://127.0.0.1:8090 | ✅ |
 | PHP 엔진 | PHP 8.4 + MariaDB | http://127.0.0.1:8101 | ✅ |
 | Node 엔진 | Express + EJS + MariaDB | http://127.0.0.1:8102 | ✅ 취약 실습(40종) + SSO |
-| Django 엔진 | Django 5 + PostgreSQL | http://127.0.0.1:8103 | ✅ 커뮤니티 앱 셸 |
+| Django 엔진 | Django 5 + PostgreSQL | http://127.0.0.1:8103 | ✅ 커뮤니티 앱 셸 + SSO |
 
 ## 실행
 ```sh
@@ -36,7 +36,7 @@ docker compose -f labs/django/compose.yaml up -d --build   # Django :8103
 각 엔진은 상용 DB(MariaDB 등)를 컨테이너로 함께 기동하며(호스트 미노출), 부팅 시 스키마+시드를 자동 생성합니다(멱등).
 
 Node 엔진은 PHP 엔진과 동등하게 공유 카탈로그의 Node 노출 40종 취약점이 실제로 동작하는 취약 실습 엔진입니다. 상용 웹처럼 Google/Kakao/Naver **SSO(OAuth 2.0)** 를 지원하며, 공급자 키는 환경변수(`GOOGLE_*`/`KAKAO_*`/`NAVER_*`, `NODE_OAUTH_REDIRECT_BASE`)로 주입합니다. 키 미설정 시 로컬 로그인에는 영향이 없습니다.
-Django 엔진도 안전한 일반 커뮤니티 앱 셸이며 PostgreSQL과 Django ORM을 사용합니다.
+Django 엔진도 안전한 일반 커뮤니티 앱 셸이며 PostgreSQL과 Django ORM을 사용합니다. 세 엔진 모두 Google/Kakao/Naver **SSO(OAuth 2.0)** 를 지원하며, 공급자 키 등 환경설정은 `labs/.env`(예시: [`.env.example`](.env.example))로 주입합니다(`cp labs/.env.example labs/.env`). 키 미설정 시 로컬 로그인에는 영향이 없습니다.
 
 ## 공유 자산 (`theme/`)
 - `theme/style.css` — 모든 엔진 공통 테마(blackout 계승)

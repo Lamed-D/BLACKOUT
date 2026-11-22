@@ -25,6 +25,9 @@ class Profile(models.Model):
     bio = models.TextField(blank=True)
     points = models.PositiveIntegerField(default=1000)
     last_ip = models.GenericIPAddressField(null=True, blank=True)
+    avatar = models.URLField(max_length=500, blank=True)
+    oauth_provider = models.CharField(max_length=20, blank=True)
+    oauth_id = models.CharField(max_length=255, blank=True)
 
 
 class Notice(models.Model):

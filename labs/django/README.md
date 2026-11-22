@@ -1,6 +1,6 @@
 # BLACKOUT Django 커뮤니티
 
-Django 5 + PostgreSQL로 만든 로컬 커뮤니티 앱 셸입니다. 의도적 취약점 연결은 이 앱의 범위 밖입니다. 실습실은 공유 카탈로그를 읽어 표시합니다.
+Django 5 + PostgreSQL로 만든 로컬 커뮤니티 앱 셸입니다. 의도적 취약점 연결은 이 앱의 범위 밖이며, 실습실은 공유 카탈로그를 읽어 표시합니다. 상용 웹처럼 Google/Kakao/Naver **SSO(OAuth 2.0)** 를 지원합니다.
 
 ## 실행
 
@@ -22,6 +22,24 @@ docker compose -f labs/django/compose.yaml up -d --build
 3. 마이페이지에서 글·댓글·포인트를 확인하고 상점에서 포인트로 상품을 구매합니다.
 4. 관리자 계정은 회원 목록을 보고 공지를 작성합니다.
 5. 실습실은 `theme/vulns.json` 중 공통과 Django 항목을 읽기 전용으로 표시합니다.
+6. 로그인 화면의 **간편 로그인(Google/Kakao/Naver SSO)** 으로 소셜 계정 로그인이 가능합니다.
+
+## 소셜 로그인(SSO)
+
+PHP·Node 엔진과 동일한 OAuth 2.0 흐름을 Django(표준 라이브러리 `urllib`)로 구현했습니다. 공급자 키는 환경변수로 주입합니다(`labs/.env` 권장, `labs/.env.example` 참고).
+
+| 환경변수 | 설명 |
+| --- | --- |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google OAuth 클라이언트 |
+| `KAKAO_CLIENT_ID` / `KAKAO_CLIENT_SECRET` | Kakao OAuth 클라이언트 |
+| `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET` | Naver OAuth 클라이언트 |
+| `DJANGO_OAUTH_REDIRECT_BASE` | 콜백 베이스 URL(기본 `http://127.0.0.1:8103`) |
+| `<PREFIX>_AUTHORIZE_URL`/`_TOKEN_URL`/`_PROFILE_URL` | (고급) 엔드포인트 오버라이드 |
+
+- 콜백 경로: `/oauth/{google|kakao|naver}/callback`
+- `state` 를 세션에 저장·상수시간 비교(CSRF 방지), 로그인 시 Django 세션 발급.
+- 계정 연결은 `Profile.oauth_provider`+`oauth_id` 또는 **검증된 이메일**로만(Naver는 검증 이메일 미표시로 매칭 제외).
+- 키 미설정 시 버튼을 눌러도 안내 후 복귀하며 로컬 로그인에는 영향이 없습니다.
 
 ## 구조
 
@@ -30,9 +48,10 @@ labs/django/
 ├─ compose.yaml       Django와 내부 PostgreSQL
 ├─ Dockerfile         labs/를 빌드 컨텍스트로 사용
 ├─ settings.py        Django 설정
-├─ urls.py            라우트
+├─ urls.py            라우트(SSO 포함)
 ├─ board/
-│  ├─ models.py       커뮤니티 데이터 모델
+│  ├─ models.py       커뮤니티 데이터 모델(Profile SSO 필드 포함)
+│  ├─ oauth.py        Google/Kakao/Naver SSO 뷰
 │  ├─ migrations/     기존 모델을 보존하는 증분 변경
 │  └─ management/     멱등 시드 명령
 └─ templates/         게시판·계정·상점·관리자·실습실
