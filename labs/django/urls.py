@@ -26,5 +26,8 @@ urlpatterns = [
     path("practice", views.practice),
     path("thoughts", views.thoughts),
     path("exploit", views.exploit),
+    path("render", views.render_template),
+    path("search_raw", views.search_raw),
+    path("api/load", views.api_load),
     path("style.css", views.style),
 ]

