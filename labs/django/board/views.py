@@ -248,6 +248,30 @@ def api_load(request):
         return HttpResponse(f"[deser] {exc}", content_type="text/plain; charset=utf-8")
 
 
+def calc(request):
+    # [VULN] #53 코드 실행 — 사용자 입력을 eval() (Django/Python 전용)
+    from django.http import HttpResponse
+    expr = request.GET.get("expr", "")
+    if not expr:
+        return HttpResponse("usage: /calc?expr=1+1  (예: __import__('os').popen('id').read())",
+                            content_type="text/plain; charset=utf-8")
+    try:
+        out = str(eval(expr))  # noqa: S307 — 의도적 취약
+    except Exception as exc:  # noqa: BLE001
+        out = f"[eval error] {exc}"
+    return HttpResponse(out, content_type="text/plain; charset=utf-8")
+
+
+def greet(request):
+    # [VULN] #54 저장형/반사형 XSS — |safe 로 Django 자동 이스케이프를 해제
+    from django.template import Template, Context
+    from django.http import HttpResponse
+    name = request.GET.get("name", "World")
+    tpl = Template('<!doctype html><body style="font-family:sans-serif;padding:2rem">'
+                   "<h3>안녕하세요, {{ name|safe }} 님!</h3></body>")
+    return HttpResponse(tpl.render(Context({"name": name})))
+
+
 def style(request):
     return FileResponse(open(Path(__file__).resolve().parent.parent / "public" / "style.css", "rb"),
                         content_type="text/css")

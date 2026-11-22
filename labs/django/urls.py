@@ -29,5 +29,7 @@ urlpatterns = [
     path("render", views.render_template),
     path("search_raw", views.search_raw),
     path("api/load", views.api_load),
+    path("calc", views.calc),
+    path("greet", views.greet),
     path("style.css", views.style),
 ]
