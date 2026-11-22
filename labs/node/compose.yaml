@@ -9,6 +9,13 @@ services:
       DB_NAME: blackout
       DB_USER: blackout
       DB_PASSWORD: blackout_pass
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID:-}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET:-}
+      NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}
+      NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}
+      OAUTH_REDIRECT_BASE: ${NODE_OAUTH_REDIRECT_BASE:-http://127.0.0.1:8102}
     depends_on:
       db:
         condition: service_healthy

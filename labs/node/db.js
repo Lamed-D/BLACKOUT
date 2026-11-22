@@ -39,8 +39,12 @@ async function initialize() {
       password VARCHAR(255) NOT NULL, name VARCHAR(80) NOT NULL DEFAULT '',
       email VARCHAR(120), role VARCHAR(20) NOT NULL DEFAULT 'user', bio TEXT,
       points INT NOT NULL DEFAULT 1000, last_ip VARCHAR(50) NOT NULL DEFAULT '',
+      avatar VARCHAR(500), oauth_provider VARCHAR(20), oauth_id VARCHAR(255),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+    await connection.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(500) NULL');
+    await connection.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20) NULL');
+    await connection.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_id VARCHAR(255) NULL');
     await connection.query(`CREATE TABLE IF NOT EXISTS posts (
       id INT AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL, content TEXT NOT NULL,
       author_id INT NOT NULL, author VARCHAR(80) NOT NULL, views INT NOT NULL DEFAULT 0,

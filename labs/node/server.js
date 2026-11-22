@@ -5,6 +5,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const {pool, initialize, hashPassword, checkPassword} = require('./db');
+const {createRouter: createOAuthRouter} = require('./oauth');
 
 const app = express();
 const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/vulns.json'), 'utf8'));
@@ -42,6 +43,8 @@ app.use((req, res, next) => {
     return res.status(403).send('요청을 확인할 수 없습니다.');
   next();
 });
+
+app.use(createOAuthRouter(pool, hashPassword));
 
 function requireUser(req, res, next) {
   if (!req.user) return res.redirect('/login');
