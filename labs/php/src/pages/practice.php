@@ -5,6 +5,7 @@ require_once __DIR__ . '/../lib.php';
 function page_practice(): void {
     $data = json_decode(@file_get_contents(__DIR__ . '/../vulns.json'), true);
     layout_header('모의해킹 실습실');
+    echo '<style>.accordion-body code{white-space:pre-wrap;word-break:break-word}.accordion-body{font-size:.95rem}.accordion-button:not(.collapsed){background:#eff6ff}</style>';
     if (!$data) { echo '<p>vulns.json 을 불러오지 못했습니다.</p>'; layout_footer(); return; }
 
     $ENGINE = 'php';
@@ -40,12 +41,12 @@ function page_practice(): void {
         $diff = $v['difficulty'];
         $dmap = ['easy' => 'diff-easy', 'medium' => 'diff-medium', 'hard' => 'diff-hard', 'expert' => 'diff-expert'];
         echo '<div class="accordion-item vuln-row" data-cat="' . h($v['category']) . '">';
-        echo '<h2 class="accordion-header"><button class="accordion-button collapsed" data-vuln="' . h($v['category']) . '" type="button" data-bs-toggle="collapse" data-bs-target="#v' . (int)$v['id'] . '">';
+        echo '<h2 class="accordion-header"><button class="accordion-button" data-vuln="' . h($v['category']) . '" type="button" data-bs-toggle="collapse" data-bs-target="#v' . (int)$v['id'] . '">';
         echo (int)$v['id'] . '. ' . h($v['title']) . ' <span class="diff-badge ' . ($dmap[$diff] ?? '') . '">' . h($diff) . '</span>';
         $eng = $v['engine'] ?? 'all';
         if ($eng !== 'all') echo ' <span class="engine-badge engine-' . h($eng) . '">' . strtoupper(h($eng)) . ' 전용</span>';
         echo '</button></h2>';
-        echo '<div id="v' . (int)$v['id'] . '" class="accordion-collapse collapse" data-bs-parent="#vulnAcc"><div class="accordion-body">';
+        echo '<div id="v' . (int)$v['id'] . '" class="accordion-collapse collapse show"><div class="accordion-body">';
         echo '<p><strong>목표:</strong> ' . h($v['goal']) . '</p>';
         echo '<p class="small text-secondary">OWASP: ' . h($v['owasp']) . ' · 경로: <code>' . h($v['route']) . '</code> · <a href="' . h($v['ref']) . '" target="_blank" rel="noopener">참고</a></p>';
         if (!empty($v['detail'])) echo '<p>' . nl2br(h($v['detail'])) . '</p>';
