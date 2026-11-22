@@ -1,9 +1,0 @@
-<%- include('header') %><div class="card mb-4"><div class="card-body p-4"><a class="small text-decoration-none" href="/">← 목록</a>
-<h1 class="h3 fw-bold mt-3"><%= post.title %></h1><p class="text-secondary small"><%= post.author %> · 조회 <%= post.views %> · <%= new Date(post.created_at).toLocaleString('ko-KR') %></p><hr>
-<div class="post-body py-3"><%= post.content %></div>
-<form method="post" action="/post/<%= post.id %>/like" class="mt-3"><input type="hidden" name="csrf" value="<%= csrf %>"><button class="btn btn-outline-danger btn-sm" <%= user ? '' : 'disabled' %>><i class="bi bi-heart"></i> 좋아요 <%= likes %></button></form></div></div>
-<div class="card"><div class="card-body p-4"><h2 class="h5 fw-bold mb-3">댓글 <%= comments.length %></h2>
-<% for (const comment of comments) { %><div class="border-bottom py-3"><b><%= comment.author %></b><span class="small text-secondary ms-2"><%= new Date(comment.created_at).toLocaleString('ko-KR') %></span><div class="post-body"><%= comment.content %></div></div><% } %>
-<% if (!comments.length) { %><p class="text-secondary">첫 댓글을 남겨 주세요.</p><% } %>
-<% if (user) { %><form method="post" action="/post/<%= post.id %>/comment" class="mt-3"><input type="hidden" name="csrf" value="<%= csrf %>"><label for="comment" class="form-label">댓글 작성</label><textarea class="form-control mb-2" id="comment" name="content" maxlength="2000" required></textarea><button class="btn btn-primary">등록</button></form><% } else { %><a href="/login">로그인하고 댓글 쓰기</a><% } %>
-</div></div><%- include('footer') %>

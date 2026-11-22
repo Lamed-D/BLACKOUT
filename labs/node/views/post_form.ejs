@@ -1,6 +1,0 @@
-<%- include('header') %><div class="card mx-auto" style="max-width:800px"><div class="card-body p-4"><h1 class="h4 fw-bold mb-3">새 글 쓰기</h1>
-<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
-<form method="post" action="/post/write"><input type="hidden" name="csrf" value="<%= csrf %>">
-<label class="form-label" for="title">제목</label><input class="form-control mb-3" id="title" name="title" maxlength="200" required>
-<label class="form-label" for="content">내용</label><textarea class="form-control mb-3" id="content" name="content" rows="10" maxlength="30000" required></textarea>
-<div class="d-flex gap-2"><button class="btn btn-primary">등록</button><a class="btn btn-outline-secondary" href="/">취소</a></div></form></div></div><%- include('footer') %>
